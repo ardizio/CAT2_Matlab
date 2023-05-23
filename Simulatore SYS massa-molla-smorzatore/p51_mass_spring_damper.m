@@ -1,4 +1,4 @@
-%% Startup functions
+%% Startup functions 
 clear
 close all
 clc
