@@ -1,5 +1,7 @@
 %% Clear Workspace
-clear; clc; close all;  
+clear;
+clc;
+close all;  
 %% Plot inizializzazione
 plot_font_size=18;
 plot_line_width=2;
