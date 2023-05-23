@@ -1,7 +1,7 @@
 %{
-[LINKs]
+[LINKS]
 https://osulp.github.io/git-advanced/06_integrate_matlab_and_git/index.html
-https://it.mathworks.com/help/ident/ug/canonical-state-space-realizations.html
+p57 => https://it.mathworks.com/help/ident/ug/canonical-state-space-realizations.html
 
 ---------------------------------------------------------------------------
 
@@ -65,7 +65,23 @@ p54 Simulatore SYS pendolo
 
 [Block004]
 
-p57 visualizzazione luogo delle radici
+p56 visualizzazione luogo delle radici
+p57 controllore R nello Spazio degli Stati (ss)
+    G, R, rlocus, risposta al gradino con treshold
+    sintesi del controllore, con forme:
+    - di CONTROLLABILITA', - MODALE
+
+---------------------------------------------------------------------------
+
+[Block005]
+
+---------------------------------------------------------------------------
+
+[Block006]
+
+---------------------------------------------------------------------------
+
+[Block007]
 
 
 %}
