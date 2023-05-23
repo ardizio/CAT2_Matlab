@@ -3,8 +3,8 @@ clear
 close all
 clc
 %% General settings
-font_size   = 18;
-line_width  = 2;
+plot_font_size   = 18;
+plot_line_width  = 2;
 plot_x0     = 500;
 plot_y0     = 300;
 plot_width  = 600;
@@ -34,22 +34,22 @@ x_2   = x_signal.Data(:, 2);
 
 % plotting the input force vs the output position
 figure(1)
-plot(t_data, u_data, LineWidth=line_width)
+plot(t_data, u_data, LineWidth=plot_line_width)
 set(gcf,'position',[plot_x0,plot_y0,plot_width,plot_height])
 hold on
-plot(t_sim, x_1, LineWidth=line_width)
+plot(t_sim, x_1, LineWidth=plot_line_width)
 grid on
 box on
-xlabel('$t$ [s]', FontSize=font_size, Interpreter='latex')
-legend('$u(t)$ [N]', '$x_1(t)$ [m]', FontSize=font_size, Interpreter='latex')
+xlabel('$t$ [s]', FontSize=plot_font_size, Interpreter='latex')
+legend('$u(t)$ [N]', '$x_1(t)$ [m]', FontSize=plot_font_size, Interpreter='latex')
 
 % plotting the orbit in the phase diagram
 figure(2)
-plot(x_1, x_2, LineWidth=line_width)
+plot(x_1, x_2, LineWidth=plot_line_width)
 set(gcf,'position',[plot_x0,plot_y0,plot_width,plot_height])
 grid on
 box on
-xlabel('$x_1(t)$ [m]', FontSize=font_size, Interpreter='latex')
-ylabel('$x_2(t)$ [m/s]', FontSize=font_size, Interpreter='latex')
+xlabel('$x_1(t)$ [m]', FontSize=plot_font_size, Interpreter='latex')
+ylabel('$x_2(t)$ [m/s]', FontSize=plot_font_size, Interpreter='latex')
 
 %}
