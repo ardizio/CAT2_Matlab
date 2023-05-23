@@ -4,8 +4,8 @@ clear
 close all
 clc
 %% Plot inizializzazione
-font_size   = 18;
-line_width  = 2;
+plot_font_size   = 18;
+plot_line_width  = 2;
 plot_x0     = 500;
 plot_y0     = 300;
 plot_width  = 800;
@@ -58,28 +58,28 @@ set(fig1, 'Name', 'FdT G(s)');
 set(gcf,'position',[plot_x0,plot_y0,plot_width,plot_height])
 %top graph
 ax(1) = subplot(3, 1, 1);
-plot(t, u, LineWidth=line_width)
+plot(t, u, LineWidth=plot_line_width)
 grid on
 box on
-xlabel('$t$ [s]', FontSize=font_size, Interpreter='latex')
-ylabel('$V_D$ [V]', FontSize=font_size, Interpreter='latex')
+xlabel('$t$ [s]', FontSize=plot_font_size, Interpreter='latex')
+ylabel('$V_D$ [V]', FontSize=plot_font_size, Interpreter='latex')
 %center graph
 ax(2) = subplot(3, 1, 2);
-plot(t_sim, y_sim, LineWidth=line_width)
+plot(t_sim, y_sim, LineWidth=plot_line_width)
 grid on
 hold on
 box on
-yline(Vi/2, LineWidth=line_width)
-xlabel('$t$ [s]', FontSize=font_size, Interpreter='latex')
-ylabel('$V_o$ [V]', FontSize=font_size, Interpreter='latex')
+yline(Vi/2, LineWidth=plot_line_width)
+xlabel('$t$ [s]', FontSize=plot_font_size, Interpreter='latex')
+ylabel('$V_o$ [V]', FontSize=plot_font_size, Interpreter='latex')
 linkaxes(ax,'x');
 %bottom graph
 subplot(3, 1, 3);
-plot(f, FT1, LineWidth=line_width)
+plot(f, FT1, LineWidth=plot_line_width)
 grid on
 box on
-xlabel('$f$ [Hz]', FontSize=font_size, Interpreter='latex')
-ylabel('$|\mathcal{F}[V_D]|$ [V]', FontSize=font_size, Interpreter='latex')
+xlabel('$f$ [Hz]', FontSize=plot_font_size, Interpreter='latex')
+ylabel('$|\mathcal{F}[V_D]|$ [V]', FontSize=plot_font_size, Interpreter='latex')
 xlim([0, 2e5])
 
 
@@ -98,38 +98,38 @@ set(gcf,'position',[plot_x0,plot_y0,plot_width,plot_height])
 
 %top graph
 ax(1) = subplot(3, 1, 1);
-Mag_plot = semilogx(W, Magdb, LineWidth=line_width);
+Mag_plot = semilogx(W, Magdb, LineWidth=plot_line_width);
 grid on
 hold on
 box on
-xline(2*pi*f_PWM, LineWidth=line_width)
-xlabel('$\omega$ [rad/s]', Interpreter='latex', FontSize=font_size)
-ylabel('$|G(j\omega)|_{dB}$', Interpreter='latex', FontSize=font_size)
+xline(2*pi*f_PWM, LineWidth=plot_line_width)
+xlabel('$\omega$ [rad/s]', Interpreter='latex', FontSize=plot_font_size)
+ylabel('$|G(j\omega)|_{dB}$', Interpreter='latex', FontSize=plot_font_size)
 Mag_plot.DataTipTemplate.DataTipRows(1).Label = "\omega = ";
 Mag_plot.DataTipTemplate.DataTipRows(2).Label = "|G(j\omega)|_{dB} = ";
 datatip(Mag_plot, 2*pi*f_PWM, 20*log10(abs(freqresp(G_dcdc, 2*pi*f_PWM))),...
-    Location="northeast", FontSize=font_size*0.7, SnapToDataVertex="off");
+    Location="northeast", FontSize=plot_font_size*0.7, SnapToDataVertex="off");
 hold off
 %center graph
 ax(2) = subplot(3, 1, 2);
-Ph_plot = semilogx(W, Phase, LineWidth=line_width);
+Ph_plot = semilogx(W, Phase, LineWidth=plot_line_width);
 grid on
 hold on
 box on
-xline(2*pi*f_PWM, LineWidth=line_width)
-xlabel('$\omega$ [rad/s]', Interpreter='latex', FontSize=font_size)
-ylabel('$\arg(G(j\omega))$', Interpreter='latex', FontSize=font_size)
+xline(2*pi*f_PWM, LineWidth=plot_line_width)
+xlabel('$\omega$ [rad/s]', Interpreter='latex', FontSize=plot_font_size)
+ylabel('$\arg(G(j\omega))$', Interpreter='latex', FontSize=plot_font_size)
 Ph_plot.DataTipTemplate.DataTipRows(1).Label = "\omega = ";
 Ph_plot.DataTipTemplate.DataTipRows(2).Label = "arg(G(j\omega)) = ";
 datatip(Ph_plot, 2*pi*f_PWM, rad2deg(angle(freqresp(G_dcdc, 2*pi*f_PWM))),...
-    Location="northeast", FontSize=font_size*0.7, SnapToDataVertex="off");
+    Location="northeast", FontSize=plot_font_size*0.7, SnapToDataVertex="off");
 hold off
 %bottom graph
 ax(3) = subplot(3, 1, 3);
-semilogx(2*pi*f, FT1, LineWidth=line_width)
+semilogx(2*pi*f, FT1, LineWidth=plot_line_width)
 grid on
 box on
-xlabel('$\omega$ [rad/s]', FontSize=font_size, Interpreter='latex')
-ylabel('$|\mathcal{F}[V_D]|$ [V]', FontSize=font_size, Interpreter='latex')
+xlabel('$\omega$ [rad/s]', FontSize=plot_font_size, Interpreter='latex')
+ylabel('$|\mathcal{F}[V_D]|$ [V]', FontSize=plot_font_size, Interpreter='latex')
 xlim([1e3, 1e6])
 linkaxes(ax,'x');

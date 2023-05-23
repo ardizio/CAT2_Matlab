@@ -1,7 +1,12 @@
 %% Clear Workspace
 clear; clc; close all;  
 %% Plot inizializzazione
-font_size=18; line_width=2; plot_x0=500; plot_y0=300; plot_width=600; plot_height=600;
+plot_font_size=18;
+plot_line_width=2;
+plot_x0=500;
+plot_y0=300;
+plot_width=600;
+plot_height=600;
 %% Parametri del sitema
 k = 1;     % costante elastica [k = 1N/m]
 M = 0.01;  % massa [M = 0.01kg]
@@ -54,23 +59,23 @@ set(gcf,'position',[plot_x0,plot_y0,plot_width,plot_height])
 %top graph
 ax(1) = subplot(2, 1, 1);
 % DISPLAYING: t_sim, x_sim
-plot(t_sim, x_sim, LineWidth=line_width)
+plot(t_sim, x_sim, LineWidth=plot_line_width)
 grid on
 box on
-xlabel('$t$ [s]', FontSize=font_size, Interpreter='latex')
-legend('$x_1(t)$ [m]', '$x_2(t)$ [m/s]', FontSize=font_size, Interpreter='latex')
+xlabel('$t$ [s]', FontSize=plot_font_size, Interpreter='latex')
+legend('$x_1(t)$ [m]', '$x_2(t)$ [m/s]', FontSize=plot_font_size, Interpreter='latex')
 
 %bottom graph
 ax(2) = subplot(2, 1, 2);
 % DISPLAYING: t_sim, y_sim
-plot(t_sim, y_sim, LineWidth=line_width)
+plot(t_sim, y_sim, LineWidth=plot_line_width)
 hold on
 % DISPLAYING: t_10, u_10
-plot(t_10, u_10, LineWidth=line_width)
+plot(t_10, u_10, LineWidth=plot_line_width)
 grid on
 box on
-xlabel('$t$ [s]', FontSize=font_size, Interpreter='latex')
-legend('$y(t)$ [m]', '$u(t)$ [N]', FontSize=font_size, Interpreter='latex')
+xlabel('$t$ [s]', FontSize=plot_font_size, Interpreter='latex')
+legend('$y(t)$ [m]', '$u(t)$ [N]', FontSize=plot_font_size, Interpreter='latex')
 hold off
 linkaxes(ax,'x');
 
@@ -164,33 +169,33 @@ set(gcf,'position',[plot_x0,plot_y0,plot_width,plot_height])
 %Grafico superiore
 ax(1) = subplot(2, 1, 1);
 % test1 (2.5 rad/s)
-plot(t_2p5, y_2p5, LineWidth=line_width)
+plot(t_2p5, y_2p5, LineWidth=plot_line_width)
 hold on
 % test2 (10 rad/s)
-plot(t_10, y_10, LineWidth=line_width)
+plot(t_10, y_10, LineWidth=plot_line_width)
 % test3 (20 rad/s)
-plot(t_20, y_20, LineWidth=line_width)
+plot(t_20, y_20, LineWidth=plot_line_width)
 % Max line
-yline(1, LineWidth=line_width)
+yline(1, LineWidth=plot_line_width)
 % Bottom line
-yline(-1, LineWidth=line_width)
+yline(-1, LineWidth=plot_line_width)
 grid on
 box on
-xlabel('$t$ [s]', FontSize=font_size, Interpreter='latex')
+xlabel('$t$ [s]', FontSize=plot_font_size, Interpreter='latex')
 legend('$y_{2.5}(t)$ [m]', '$y_{10}(t)$ [m]', '$y_{20}(t)$ [m]',...
-    FontSize=font_size, Interpreter='latex')
+    FontSize=plot_font_size, Interpreter='latex')
 hold off
 
 %Grafico inferiore
 ax(2) = subplot(2, 1, 2);
 % line1 sinusoidal [y] uscita sinusoidale al gradino
-plot(t_square, y_square, LineWidth=line_width)
+plot(t_square, y_square, LineWidth=plot_line_width)
 hold on
 % line2 squared [u_square] ingresso al gradino
-plot(t_square, u_square, LineWidth=line_width)
+plot(t_square, u_square, LineWidth=plot_line_width)
 grid on
 box on
-xlabel('$t$ [s]', FontSize=font_size, Interpreter='latex')
-legend('$y(t)$ [m]', '$u(t)$ [N]', FontSize=font_size,...
+xlabel('$t$ [s]', FontSize=plot_font_size, Interpreter='latex')
+legend('$y(t)$ [m]', '$u(t)$ [N]', FontSize=plot_font_size,...
     Interpreter='latex', Location='SouthEast')
 hold off
