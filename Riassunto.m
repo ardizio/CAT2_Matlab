@@ -71,6 +71,15 @@ p57 controllore R nello Spazio degli Stati (ss)
     sintesi del controllore, con forme:
     - di CONTROLLABILITA', - MODALE
 
+p59 come agire su Ta, S%, 
+
+p60 pendulum_control e realizzo del regolatore per sentimento
+p60 Linearized system around theta_star = 2pi/3
+p61 Linearized system around theta_star = pi/3
+
+p62_inverted_pendulum_control
+
+
 ---------------------------------------------------------------------------
 
 [Block005]
