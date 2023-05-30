@@ -19,10 +19,8 @@ l = 0.3;   % lunghezza asta del pendolo [m] (pendulum length)
 M = 0.5;   % massa [kg]
 b = 0.05;  % coefficiente di smorzamento [Nms/rad] (damping coefficient)
 g = 9.81;  % accellerazione di gravità [m/s^2] (gravity acceleration)
-
-
-
-%% PARTE 1 - Linearized system around theta_star = 2pi/3
+%% PARTE 1
+% Linearized system around theta_star = 2pi/3
 
 % punto di equilibrio imposto
 theta_star_u = 2*pi/3;
@@ -41,14 +39,10 @@ D_lin_u    = 0;
 disp('Eigenvalues of the linearized system (unstable eq.):')
 disp(eig(A_lin_u))
 
-
 % creo la variabile sistema lineare
 lin_lti_u   = ss(A_lin_u, B_lin_u, C_lin_u, D_lin_u);
 % ricavo la FdT
 G_lin_u     = minreal(tf(lin_lti_u));
-
-
-
 
 % PLOT Sistema
 figure(1)
@@ -75,10 +69,13 @@ subplot(1, 2, 2)
 step(F_u)
 grid on
 legend('$k = 0.75$', FontSize=plot_font_size, Interpreter='latex')
-stepinfo(F_u, SettlingTimeThreshold=0.05)
+stepinfo(F_u, SettlingTimeThreshold=0.05) %ULTRA IMPORTANT RESPONSE
 
 % no state space realization is necessary, the controller is a static gain
 %% Testing the controller
+% Gain R, inseguimento riposta
+% posso solo cambiare il valore di R
+
 
 % Setto il tempo di simulazione per Simulink
 Tf_1     = 20;   
@@ -88,11 +85,9 @@ u_star_u = C_star_u*ones(size(t_data));
 % Converto gli ingressi in Timeseries
 u_1      = timeseries(u_star_u, t_data); 
 
-
-
 figure(2)
 hold on
-% NOTA: ogni valore nella [] è un ciclo for diversi
+% NOTA: ogni valore nella [] è un ciclo for diverso
 for i = 2*pi/3 + [-1 0.5 0 0.5 1]/180*pi
     for j = [-1 0 1]/180*pi
         x0_1 = [i; j];
@@ -119,7 +114,13 @@ title('Controlled system with $\theta^\star = 2\pi/3$', FontSize=plot_font_size,
 
 
 
-%% PARTE 2 - Linearized system around theta_star = pi/3
+
+
+
+
+
+%% PARTE 2 
+% Linearized system around theta_star = pi/3
 
 % punto di equilibrio imposto
 theta_star_s = pi/3;
@@ -134,9 +135,6 @@ B_lin_s    = [0; 1/(M*l^2)];
 C_lin_s    = [1 0];
 D_lin_s    = 0;
 
-
-
-
 % mostro gli autovalori della matrice A
 disp('Eigenvalues of the linearized system (stable eq.):')
 disp(eig(A_lin_s))
@@ -147,15 +145,11 @@ lin_lti_s   = ss(A_lin_s, B_lin_s, C_lin_s, D_lin_s);
 % ricavo la FdT
 G_lin_s     = minreal(tf(lin_lti_s));
 
-
-
 % VARIABILE K di CONTROLLO
 % R_s passata al Gain del Workspace
 % control design with root locus
 % inizialemnte è un azzeccarci, bisogna tararla finchè non funziona
 R_s = (s^2 +2*0.75*4*s + 4^2)/s/(0.05*s+1);
-
-
 
 figure(3)
 set(gcf,'position',[plot_x0,plot_y0,plot_width,plot_height])
@@ -169,7 +163,6 @@ p.XLim = {[-10, 0]};
 setoptions(h, p);
 grid on
 
-
 % Parte 2 del plot
 % Risposta al gradino di F(s)
 R_s = 0.55*R_s;
@@ -180,8 +173,6 @@ grid on
 legend('$k = 0.55$', FontSize=plot_font_size, Interpreter='latex')
 stepinfo(F_s, SettlingTimeThreshold=0.05)
 
-
-
 % Realizzazione nello Spazio degliStati ss
 % del Sistema con controllo
 R_s_lti = ss(R_s);
@@ -189,7 +180,6 @@ A_ctrl  = R_s_lti.A;
 B_ctrl  = R_s_lti.B;
 C_ctrl  = R_s_lti.C;
 D_ctrl  = R_s_lti.D;
-
 
 %% Testing the controller
 
