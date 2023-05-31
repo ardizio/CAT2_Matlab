@@ -81,48 +81,84 @@ C_lin_pos = [1 0 0 0];
 %Legame algebrico ingresso–uscita:  D = []
 D_lin_pos = 0;
 
-
 %convert dynamic system models to state-space model form.
-LTI_lin_ang = ss(A_lin, B_lin, C_lin_theta, D_lin_theta);
-LTI_lin_pos = ss(A_lin, B_lin, C_lin_pos, D_lin_pos);
+LTI_lin_theta = ss(A_lin, B_lin, C_lin_theta, D_lin_theta);
+LTI_lin_position = ss(A_lin, B_lin, C_lin_pos, D_lin_pos);
 
 %FdT angolare
-G_lin = tf(LTI_lin_ang);
+G_ang = tf(LTI_lin_theta);
 
+
+is_G_ang_Stable = isstable(G_ang);
+if is_G_ang_Stable
+    fprintf('\nG_ang Stability:\nFdT is STABLE\n\n');
+else
+    fprintf('\nG_ang Stability:\nFdT is UNSTABLE\n\n');
+end
 
 % realization or pole-zero cancellation
-disp('MINREAL realization or pole-zero cancellation of G_lin');
-G_lin_minreal = minreal(G_lin);
+fprintf('\nMINREAL (realization or pole-zero):');
 
-is_G_lin_Stable = isstable(G_lin);
-if is_G_lin_Stable
-    disp(' ');
-    disp('G_lin FdT is STABLE.');
-else
-    disp(' ');
-    disp('G_lin FdT is UNSTABLE.');
-end
+%{
 % Posizione Poli
-disp(' ');
-disp('Posizione Poli G_lin');
-poles = pole(G_lin_minreal);
+fprintf('\n G_ang POLES:');
+poles = pole(G_ang_minreal);
+disp(poles);
 % Posizione Zeri
-disp(' ');
-disp('Posizione Zeri G_lin');
-zeros = zero(G_lin_minreal);
-% Stabilita'
-% PASSARE IN RISPOSTA IN FREQUENZA
+fprintf('\n G_ang ZEROS :');
+zeros = zero(G_ang_minreal);
+disp(zeros);
+%}
 
+% Display zero/pole/gain model
+disp ('FdT of linearized model (theta):')
+zpk_G_ang = zpk(G_ang)
 
-Request = ["Request", "rlocus", "Luogo delle radici"];
+G_ang = minreal(G_ang)
+%{
+% G_ang rlocus
+Request = ["Request", "rlocus", " [G_ang_minreal] Luogo delle radici"];
 Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-plotWithCustomOptions(Request, G_lin, Options)
+plotWithCustomOptions(Request, G_ang, Options)
+%}
 
+
+
+%Demo Regolatore
+R_ang = -(s+0.4)*(s+4.5)/s/(s+9);
+%Gain
+K = 22;
+% Gain * Regolatore
+R_ang = K * R_ang;
+% Minreal pole-zero
+G_e_ang = minreal(G_ang * R_ang);
+% G_e_ang rlocus
+Request = ["Request", "rlocus", " [G_e_ang] Luogo delle radici"];
+Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+plotWithCustomOptions(Request, G_e_ang, Options)
+
+%{
+Request = ["Request", "step", " [G_e_ang] Step response"];
+plotWithCustomOptions(Request, G_e_ang, Options)
+%}
+
+
+
+%% Sentitivity functions 
+L_ang = minreal(G_ang * R_ang);
+
+S = minreal(1/(1+L_ang));
+F = minreal(L_ang/(1+L_ang));
+Q = minreal(R_ang/(1+L_ang));
+
+Request = ["Request", "step", " [F] risposta al gradino"];
+plotWithCustomOptions(Request, F, Options)
 
 
 %{
 
 
+% PASSARE IN RISPOSTA IN FREQUENZA
 
 
 %risposta al grdino di G
@@ -164,7 +200,7 @@ R_ang = -(s+0.4)*(s+4.5)/s/(s+12);
 
 
 %FdT posizione
-G_lin_pos = tf(LTI_lin_pos);
+G_lin_pos = tf(LTI_lin_position);
 disp ('Transfer function of the linearized model (Cart Position):')
 zpk(G_lin_pos);
 
@@ -262,7 +298,9 @@ MINREAL
 
 %}
 
-%%END
+
+
+%% END Segment
 % Create a figure
 if plot_figureIndex > 1
     fig = figure;

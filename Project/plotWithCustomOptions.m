@@ -6,6 +6,9 @@ Request = ["Request", "function", "plot_name"];
 Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
 plotWithCustomOptions(Request, function, Options)
 
+functions supported:
+- "rlocus"
+- "step"
 %}
 function plotWithCustomOptions(Request, Input, Options)
 
@@ -39,6 +42,8 @@ function plotWithCustomOptions(Request, Input, Options)
     if Request(1) == "Request"
        if Request(2) == "rlocus"
            rlocus(Input);
+       elseif Request(2) == "step"
+           step(Input);
        end
     end
    
