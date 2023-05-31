@@ -111,4 +111,6 @@ function plotWithCustomOptions(Request, Input, Options)
     assignin('base', 'plot_from_bottom', plot_from_bottom);       
 
     %fprintf('END plotWithCustomOptions\n');
+    hold off
+
 end

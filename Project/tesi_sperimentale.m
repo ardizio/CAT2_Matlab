@@ -2,6 +2,8 @@
 clear 
 clc
 close all
+
+blank = 0;
 %% General settings
 plot_figureIndex = 1;
 % CHANGE To FIT DEVICE SCREEN
@@ -91,15 +93,16 @@ G_ang = tf(LTI_lin_theta);
 
 is_G_ang_Stable = isstable(G_ang);
 if is_G_ang_Stable
-    fprintf('\nG_ang Stability:\nFdT is STABLE\n\n');
+    fprintf('\nG_ang Stability: STABLE\n\n');
 else
-    fprintf('\nG_ang Stability:\nFdT is UNSTABLE\n\n');
+    fprintf('\nG_ang Stability: UNSTABLE\n\n');
 end
 
+
+%{
 % realization or pole-zero cancellation
 fprintf('\nMINREAL (realization or pole-zero):');
 
-%{
 % Posizione Poli
 fprintf('\n G_ang POLES:');
 poles = pole(G_ang_minreal);
@@ -111,23 +114,24 @@ disp(zeros);
 %}
 
 % Display zero/pole/gain model
-disp ('FdT of linearized model (theta):')
-zpk_G_ang = zpk(G_ang)
+%disp ('FdT of linearized model (theta):')
+zpk_G_ang = zpk(G_ang);
 
-G_ang = minreal(G_ang)
+G_ang = minreal(G_ang);
 %{
 % G_ang rlocus
 Request = ["Request", "rlocus", " [G_ang_minreal] Luogo delle radici"];
 Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
 plotWithCustomOptions(Request, G_ang, Options)
 %}
+%% Bode over G_ang
 
 
 
 %Demo Regolatore
-R_ang = -(s+0.4)*(s+4.5)/s/(s+9);
+R_ang = -(s+0.4)*(s+4.5)/s/(s+13);
 %Gain
-K = 22;
+K = 23;
 % Gain * Regolatore
 R_ang = K * R_ang;
 % Minreal pole-zero
@@ -154,6 +158,35 @@ Q = minreal(R_ang/(1+L_ang));
 Request = ["Request", "step", " [F] risposta al gradino"];
 plotWithCustomOptions(Request, F, Options)
 
+Request = ["Request", "rlocus", " [F] rlocus"];
+plotWithCustomOptions(Request, minreal(F), Options)
+
+
+
+Request = ["Request", "blank", " [G_e_ang] bode"];
+plotWithCustomOptions(Request, blank, Options)
+[mag, phase, wout] = bode(G_e_ang);     % Assign the plot data to variables
+[~, pm, ~, gm] = margin(G_e_ang)
+setoptions = bodeoptions;               % Get the default plot options
+setoptions.Grid = 'on';                 % Turn on the grid
+bode(G_e_ang, setoptions);              % Plot the Bode plot with custom options
+hold on;
+% Display phase margin and gain margin on the Bode plot
+text(0.5, -180+pm, sprintf('Pm = %.2f deg', pm), 'Color', 'red');
+text(0.5/gm, 0, sprintf('Gm = %.2f dB', 20*log10(gm)), 'Color', 'blue');
+
+
+%% Goals
+%{
+% Requirements
+mindecay   = 1.2;
+mindamping = 0.7;
+maxfreq    = inf;
+Goals      = TuningGoal.Poles(mindecay, mindamping, maxfreq);
+Request = ["Request", "blank", " [F] Show Goals"];
+plotWithCustomOptions(Request, F, Options)
+viewGoal(Goals, F);
+%}
 
 %{
 
@@ -297,7 +330,6 @@ MINREAL
 %}
 
 %}
-
 
 
 %% END Segment
