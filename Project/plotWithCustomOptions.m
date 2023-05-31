@@ -7,7 +7,6 @@ Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
 plotWithCustomOptions(Request, function, Options)
 
 %}
-
 function plotWithCustomOptions(Request, Input, Options)
 
     %fprintf('START plotWithCustomOptions \n');
@@ -108,15 +107,3 @@ function plotWithCustomOptions(Request, Input, Options)
 
     %fprintf('END plotWithCustomOptions\n');
 end
-
-
-
- %{
-% Check if line can accept one more plot
-
-
-if plot_CurrentRow > plot_max_rows
-        plot_CurrentRow = 1
-end
-plot_CurrentRow = plot_CurrentRow + 1
-    %}

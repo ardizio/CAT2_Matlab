@@ -4,75 +4,74 @@ clc
 close all
 %% General settings
 plot_figureIndex = 1;
-
+% CHANGE To FIT DEVICE SCREEN
 plot_MaxColumns  = 3;
 plot_max_rows  = 2;
 plot_CurrentColumn  = 1;
 plot_CurrentRow = 1;
-
+% 
 plot_font_size   = 18;
 plot_line_width  = 2;
-
-screenSize = get(groot, 'ScreenSize');
-desktopWidth = screenSize(3);
-desktopHeight = screenSize(4);
-
-plot_width = desktopWidth/plot_MaxColumns;
+% GET device ScreenSize variables
+screen_Size = get(groot, 'ScreenSize');
+screen_Width = screen_Size(3);
+screen_Height = screen_Size(4);
+% SET plot width & height
+plot_width = screen_Width/plot_MaxColumns;
 plot_height  = 460;
-%Plot positions
+% DEFINE plot positions in Screen
 plot_from_left = 0;
-plot_from_bottom = desktopHeight;
-
-
-
-%% Parametri del carrello su pendolo inverso
+plot_from_bottom = screen_Height;
+%%
 %{
 PROBLEM 1: Stabilizzare intorno all'equilibrio
 PROBLEM 2: T_ae < 1,2 sec
 PROBLEM 3: Discretizzazione
-
 EXTRA 4: Stabilizzare il carrello al centro della rotaia 
          Sfruttare il controllo in cascata
 %}
-M = 0.61;     % massa del carrello [kg]
-ma = 0.116;   % massa asta mass [kg]
-mb = 0.05;    % massa posta al termine dell'asta [kg]
-l = 0.45;     % lunghezza dell'asta [m]
-k = 0;        % rigidità della molla [N/m]
-b = 0.1;      % coefficient di smorzamento [Ns/m]
-g = 9.81;     % accellerazione di gravità [m/s^2]
-Ja = (1/12)*ma*l^2;% Inertia 
-Jb = 0;
-v0 = 0;         %iniziali
-x0 = 0;         %iniziali
-omega0 = 0;     %iniziali
-theta0= pi/12;  %iniziali
+%% Parametri del carrello su pendolo inverso
+M = 0.61;          % massa del carrello [kg]
+ma = 0.116;        % massa asta [kg]
+mb = 0.05;         % massa posta al termine dell'asta [kg]
+l = 0.45;          % lunghezza dell'asta [m]
+k = 0;             % rigidità della molla [N/m]
+b = 0.1;           % coefficiente di smorzamento [Ns/m]
+g = 9.81;          % accellerazione di gravità [m/s^2]
+Ja = (1/12)*ma*l^2;% Inertia ma
+Jb = 0;            % Inertia mb
+v0 = 0;            % to SLX
+x0 = 0;            % to SLX
+omega0 = 0;        % to SLX
+theta0= pi/12;     % to SLX
 %% Transfer function variable
 s = tf('s');
 %% Simulink settings
-MaxStep  = 1e-2; % solver max step size
-RelTol   = 1e-2; % solver relative tolerance
-T_f      = 10;   % final simulation time
+MaxStep  = 1e-2;  % solver max step size
+RelTol   = 1e-2;  % solver relative tolerance
+T_f      = 10;    % final simulation time
 %% Linearizated model
 % states: x_1: linear position
 %         x_2: angular position
 %         x_3: linear speed
 %         x_4: angular speed
-
 % MATRICE di Masse
 M_lin = [(ma/2+mb)*l (ma/4+mb)*l^2+Ja+Jb;
-            M+ma+mb (ma/2+mb)*l];
+           M+ma+mb      (ma/2+mb)*l     ];
 % MATRICE Dinamica:  A = []
 A_1 = [0 0 1 0;
-        0 0 0 1];
-A_2 = (M_lin^-1)*[0 (ma/2+mb)*g*l 0 0;
-                    -k 0 -b 0];
+       0 0 0 1];
+A_2 = (M_lin^-1) * [0  (ma/2+mb)*g*l  0  0;
+                    -k      0        -b  0];
 A_lin = [A_1;
          A_2];
 % MATRICE di distribuizioine degli ingressi:  B = []
-B1 = [0;0];
-B2 = (M_lin^-1)*[0; 1];
-B_lin=[B1; B2];
+B1 = [0;
+      0];
+B2 = (M_lin^-1) * [0;
+                   1];
+B_lin=[B1;
+       B2];
 % MATRICE di distribuzione delle uscite:  C = []
 C_lin_theta = [0 1 0 0];
 %Legame algebrico ingresso–uscita:  D = []
@@ -274,7 +273,6 @@ if plot_figureIndex > 1
     
     set(gcf,'position',[800,500,140,50])
 end
-
- function clear_plots(~, ~)
+function clear_plots(~, ~)
     close all
- end
+end
