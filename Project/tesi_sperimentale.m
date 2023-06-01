@@ -30,7 +30,7 @@ PROBLEM 3: Discretizzazione
 EXTRA 4: Stabilizzare il carrello al centro della rotaia 
          Sfruttare il controllo in cascata
 %}
-%% Parametri del carrello su pendolo inverso
+%% Parametri del carrello su pendolo inverso [p_xxx stands as parameter_xxxx]
 p_M = 0.61;          % massa del carrello [kg]
 p_ma = 0.116;        % massa asta [kg]
 p_mb = 0.05;         % massa posta al termine dell'asta [kg]
@@ -88,97 +88,91 @@ LTI_position_lin = ss(Matrix_A_lin, Matrix_B_lin, Matrix_C_pos_lin, Matrix_D_pos
 
 
 %% EXTRACT DATA FROM Tranfer Function
-% G_ang: FUNZIONE DI TRASFERIMENTO angolare 
-G_ang = tf(LTI_theta_lin);
+% f_G_theta: FUNZIONE DI TRASFERIMENTO angolare 
+f_G_theta = tf(LTI_theta_lin);
 % check: FISICA REALIZZABILITA'
-[FdT_orderNumerator, FdT_orderDenominator] = getFunctionOrdersNumDen(G_ang);
+[f_G_theta_orderNum, f_G_theta_orderDen] = getFunctionOrdersNumDen(f_G_theta);
 % Display the orders
-if FdT_orderNumerator <= FdT_orderDenominator
-    disp('G_ang è FISICAMENTE REALIZZABILE');
+if f_G_theta_orderNum <= f_G_theta_orderDen
+    disp('f_G_theta è FISICAMENTE REALIZZABILE');
 end
 % check: STABILITA'
-FdT_isStable = isstable(G_ang);
-if FdT_isStable
-    disp('G_ang Stabilità: STABLE');
+f_G_theta_isStable = isstable(f_G_theta);
+if f_G_theta_isStable
+    disp('f_G_theta Stabilità: STABILE');
 else
-    disp('G_ang Stabilità: UNSTABLE');
+    disp('f_G_theta Stabilità: INSTABILE');
 end
 
 
 % Fattorizzazione ZPK della FdT - MINIMIZZATA
-%G_ang = minreal(zpk(G_ang));
-
-
-
-
-
-%{
-% realization or pole-zero cancellation
 fprintf('\nMINREAL (realization or pole-zero):');
+f_G_theta_ZPK = minreal(zpk(f_G_theta))
+
 
 % Posizione Poli
-fprintf('\n G_ang POLES:');
-poles = pole(G_ang_minreal);
-disp(poles);
+fprintf('\n f_G_theta POLI:');
+f_G_theta_Poles = pole(f_G_theta_ZPK);
+disp(f_G_theta_Poles);
 % Posizione Zeri
-fprintf('\n G_ang ZEROS :');
-zeros = zero(G_ang_minreal);
-disp(zeros);
-%}
+fprintf('\n f_G_theta ZERI :');
+f_G_theta_Zeros = zero(f_G_theta_ZPK);
+disp(f_G_theta_Zeros);
 
 
 
-% G_ang rlocus [OPEN LOOP]
-Request = ["Request", "rlocus", " [G_ang OPEN LOOP] Luogo delle radici "];
-Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-plotWithCustomOptions(Request, G_ang, Options)
-%% Bode over G_ang
+
+% f_G_theta rlocus [OPEN LOOP]
+plot_f_Request = ["Request", "rlocus", " [f_G_theta OPEN LOOP] Luogo delle radici "];
+plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+plotWithCustomOptions(plot_f_Request, f_G_theta, plot_f_Options)
+%% Bode over f_G_theta
 %Demo Regolatore
-R_ang = -(s+0.4)*(s+4.5)/s/(s+13);
+f_R_theta = -(s+0.4)*(s+4.5)/s/(s+13);
 %Gain
-K = 23;
+f_K_theta_Gain = 22;
 % Gain * Regolatore
-R_ang = K * R_ang;
+f_KR_theta = f_K_theta_Gain * f_R_theta;
 % Minreal pole-zero
-G_e_ang = minreal(G_ang * R_ang);
-% G_e_ang rlocus [CLOSED LOOP]
-Request = ["Request", "rlocus", " [G_e_ang CLOSED LOOP] Luogo delle radici"];
-Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-plotWithCustomOptions(Request, G_e_ang, Options)
+f_G_e_theta = minreal(f_G_theta * f_KR_theta);
+% f_G_e_theta rlocus [CLOSED LOOP]
+plot_f_Request = ["Request", "rlocus", " [f_G_e_theta CLOSED LOOP] Luogo delle radici"];
+plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+plotWithCustomOptions(plot_f_Request, f_G_e_theta, plot_f_Options)
 
 %{
-Request = ["Request", "step", " [G_e_ang] Step response"];
-plotWithCustomOptions(Request, G_e_ang, Options)
+plot_f_Request = ["Request", "step", " [f_G_e_theta] Step response"];
+plotWithCustomOptions(plot_f_Request, f_G_e_theta, plot_f_Options)
 %}
 
 
 
 %% Sentitivity functions 
-L_ang = minreal(G_ang * R_ang);
+L_ang = minreal(f_G_theta * f_KR_theta);
 
 % Funzione di Sensitività [S]
 S = minreal(1/(1+L_ang));
 % Funzione di Sensitività complementare [F]
 F = minreal(L_ang/(1+L_ang));
 % Funzione di Sensitività del controllo [Q]
-Q = minreal(R_ang/(1+L_ang));
+Q = minreal(f_KR_theta/(1+L_ang));
 
 
-Request = ["Request", "step", " [F] risposta al gradino"];
-plotWithCustomOptions(Request, F, Options)
+plot_f_Request = ["Request", "step", " [F] risposta al gradino"];
+plotWithCustomOptions(plot_f_Request, F, plot_f_Options)
 
-Request = ["Request", "rlocus", " [F] rlocus"];
-plotWithCustomOptions(Request, minreal(F), Options)
+plot_f_Request = ["Request", "rlocus", " [F] rlocus"];
+plotWithCustomOptions(plot_f_Request, minreal(F), plot_f_Options)
 
 
 % STUDIO DELLA STABILITA' ROBUSTA del sistema in retroazione
-Request = ["Request", "blank", " [G_e_ang] bode"];
-plotWithCustomOptions(Request, 0, Options)
-[mag, phase, wout] = bode(G_e_ang);     % Assign the plot data to variables
-[~, pm, ~, gm] = margin(G_e_ang);
+plot_f_Request = ["Request", "blank", " [f_G_e_theta] bode"];
+plotWithCustomOptions(plot_f_Request, 0, plot_f_Options)
+[mag, phase, wout] = bode(f_G_e_theta);     % Assign the plot data to variables
+[~, pm, ~, gm] = margin(f_G_e_theta);
 setoptions = bodeoptions;               % Get the default plot options
 setoptions.Grid = 'on';                 % Turn on the grid
-bode(G_e_ang, setoptions);              % Plot the Bode plot with custom options
+bode(f_G_e_theta, setoptions);              % Plot the Bode plot with custom options
 hold on;
 % Display phase margin and gain margin on the Bode plot
 text(0.5, -180+pm, sprintf('Pm = %.2f deg', pm), 'Color', 'red');
@@ -192,8 +186,8 @@ mindecay   = 1.2;
 mindamping = 0.7;
 maxfreq    = inf;
 Goals      = TuningGoal.Poles(mindecay, mindamping, maxfreq);
-Request = ["Request", "blank", " [F] Show Goals"];
-plotWithCustomOptions(Request, F, Options)
+plot_f_Request = ["Request", "blank", " [F] Show Goals"];
+plotWithCustomOptions(plot_f_Request, F, plot_f_Options)
 viewGoal(Goals, F);
 %}
 
@@ -233,7 +227,7 @@ zpk(G_lin)
 
 
 p_k=29
-R_ang = -(s+0.4)*(s+4.5)/s/(s+12);
+f_KR_theta = -(s+0.4)*(s+4.5)/s/(s+12);
 
 
 
@@ -251,18 +245,18 @@ zpk(G_lin_pos);
 %R = (s+4)(s+4.5)/s/(s+8); -> causa di oscillazioni
 
         -(s+0.4)*(s+4.5)
-R_ang = ----------------
+f_KR_theta = ----------------
              s(s+9)
 %}
 
 %Regolatore ANGOLARE
-R_ang = -(s+0.4)*(s+4.5)/s/(s+9);
+f_KR_theta = -(s+0.4)*(s+4.5)/s/(s+9);
 %Gain per entrare nella zona di Re>0
-K = 21;
-R_ang = K * R_ang;
+f_K_theta_Gain = 21;
+f_KR_theta = f_K_theta_Gain * f_KR_theta;
 %Sistema esteso
-G_e_ang = minreal(G_lin_ang*R_ang);
-rlocus(G_e_ang);
+f_G_e_theta = minreal(G_lin_ang*f_KR_theta);
+rlocus(f_G_e_theta);
 grid on;
 
 
@@ -272,7 +266,7 @@ delta_star = 0.52834; % per una sovraelong max di 10
 delta = 0.55;
 Mf = delta*100;
 
-[M_a,P,W]=bode(G_e_ang);
+[M_a,P,W]=bode(f_G_e_theta);
 [V,i]=min(abs(W-100));
 GeWcd=M_a(i);
 ArgGeWcd=P(i);
@@ -289,7 +283,7 @@ alpha=(cos(Pd)-1/Md)/(100*sin(Pd))/tau;
 
 R_ant = (1+tau*s)/(1+alpha*tau*s);
 
-R = minreal(R_ang*R_ant);
+R = minreal(f_KR_theta*R_ant);
 %% Controllore in the space state sistem
 
 R_lti   = ss(R);
@@ -304,7 +298,7 @@ L_ang = minreal(G_lin_ang*R);
 
 S = minreal(1/(1+L_ang));
 F = minreal(L_ang/(1+L_ang));
-Q = minreal(R_ang/(1+L_ang));
+Q = minreal(f_KR_theta/(1+L_ang));
 
 %Tempo di assestamento massimo (entro il 5%) = 1.2s
 
@@ -344,10 +338,10 @@ MINREAL
 %% END Segment
 % Create a figure
 if plot_figure_Index > 1
-    fig = figure;
+    plot_closeAll = figure;
 
     % Create a button uicontrol
-    btn = uicontrol('Style', 'pushbutton', 'String', 'Chiudi Tutto', ...
+    plot_closeAll_button = uicontrol('Style', 'pushbutton', 'String', 'Chiudi Tutto', ...
         'Position', [20 20 100 30], 'Callback', @clear_plots);
     
     set(gcf,'position',[800,500,140,50])

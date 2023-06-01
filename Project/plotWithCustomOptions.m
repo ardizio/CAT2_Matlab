@@ -2,9 +2,9 @@
 
 %{
 
-Request = ["Request", "function", "plot_name"];
-Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-plotWithCustomOptions(Request, function, Options)
+plot_f_Request = ["Request", "function", "plot_name"];
+plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+plotWithCustomOptions(plot_Request, function, plot_Options)
 
 functions supported:
 - "rlocus"
