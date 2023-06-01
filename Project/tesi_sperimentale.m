@@ -2,28 +2,26 @@
 clear 
 clc
 close all
-
-blank = 0;
 %% General settings
-plot_figureIndex = 1;
+plot_figure_Index = 1;
 % CHANGE To FIT DEVICE SCREEN
-plot_MaxColumns  = 3;
-plot_max_rows  = 2;
-plot_CurrentColumn  = 1;
-plot_CurrentRow = 1;
+plot_device_maxColumns  = 3;
+plot_device_maxRows  = 2;
+plot_current_Column  = 1;
+plot_current_Row = 1;
 % 
-plot_font_size   = 18;
-plot_line_width  = 2;
+plot_style_fontSize   = 18;
+plot_style_lineWidth  = 2;
 % GET device ScreenSize variables
-screen_Size = get(groot, 'ScreenSize');
-screen_Width = screen_Size(3);
-screen_Height = screen_Size(4);
+plot_screen_Size = get(groot, 'ScreenSize');
+plot_screen_Width = plot_screen_Size(3);
+plot_screen_Height = plot_screen_Size(4);
 % SET plot width & height
-plot_width = screen_Width/plot_MaxColumns;
-plot_height  = 460;
+plot_window_Width = plot_screen_Width/plot_device_maxColumns;
+plot_window_Height  = 460;
 % DEFINE plot positions in Screen
-plot_from_left = 0;
-plot_from_bottom = screen_Height;
+plot_position_from_left = 0;
+plot_position_from_bottom = plot_screen_Height;
 %%
 %{
 PROBLEM 1: Stabilizzare intorno all'equilibrio
@@ -33,81 +31,82 @@ EXTRA 4: Stabilizzare il carrello al centro della rotaia
          Sfruttare il controllo in cascata
 %}
 %% Parametri del carrello su pendolo inverso
-M = 0.61;          % massa del carrello [kg]
-ma = 0.116;        % massa asta [kg]
-mb = 0.05;         % massa posta al termine dell'asta [kg]
-l = 0.45;          % lunghezza dell'asta [m]
-k = 0;             % rigidità della molla [N/m]
-b = 0.1;           % coefficiente di smorzamento [Ns/m]
-g = 9.81;          % accellerazione di gravità [m/s^2]
-Ja = (1/12)*ma*l^2;% Inertia ma
-Jb = 0;            % Inertia mb
-v0 = 0;            % to SLX
-x0 = 0;            % to SLX
-omega0 = 0;        % to SLX
-theta0= pi/12;     % to SLX
+p_M = 0.61;          % massa del carrello [kg]
+p_ma = 0.116;        % massa asta [kg]
+p_mb = 0.05;         % massa posta al termine dell'asta [kg]
+p_l = 0.45;          % lunghezza dell'asta [m]
+p_k = 0;             % rigidità della molla [N/m]
+p_b = 0.1;           % coefficiente di smorzamento [Ns/m]
+p_g = 9.81;          % accellerazione di gravità [m/s^2]
+p_Ja = (1/12)*p_ma*p_l^2;% Inertia p_ma
+p_Jb = 0;            % Inertia p_mb
+init_v0 = 0;         % to SLX
+init_x0 = 0;         % to SLX
+init_omega0 = 0;     % to SLX
+init_theta0= pi/12;  % to SLX
 %% Transfer function variable
 s = tf('s');
 %% Simulink settings
-MaxStep  = 1e-2;  % solver max step size
-RelTol   = 1e-2;  % solver relative tolerance
-T_f      = 10;    % final simulation time
+MaxStep  = 1e-2;    % solver max step size
+RelTol   = 1e-2;    % solver relative tolerance
+simulation_T_f= 10; % final simulation time
 %% Linearizated model
 % states: x_1: linear position
 %         x_2: angular position
 %         x_3: linear speed
 %         x_4: angular speed
 % MATRICE di Masse
-M_lin = [(ma/2+mb)*l (ma/4+mb)*l^2+Ja+Jb;
-           M+ma+mb      (ma/2+mb)*l     ];
+Matrix_Masse_lin = [(p_ma/2+p_mb)*p_l   (p_ma/4+p_mb)*p_l^2+p_Ja+p_Jb;
+                        p_M+p_ma+p_mb         (p_ma/2+p_mb)*p_l       ];
 % MATRICE Dinamica:  A = []
-A_1 = [0 0 1 0;
-       0 0 0 1];
-A_2 = (M_lin^-1) * [0  (ma/2+mb)*g*l  0  0;
-                    -k      0        -b  0];
-A_lin = [A_1;
-         A_2];
+Matrix_A_1 = [0 0 1 0;
+              0 0 0 1];
+Matrix_A_2 = (Matrix_Masse_lin^-1) * [0      (p_ma/2+p_mb)*p_g*p_l  0    0;
+                                      -p_k           0             -p_b  0];
+Matrix_A_lin = [Matrix_A_1;
+                Matrix_A_2];
 % MATRICE di distribuizioine degli ingressi:  B = []
-B1 = [0;
-      0];
-B2 = (M_lin^-1) * [0;
-                   1];
-B_lin=[B1;
-       B2];
+Matrix_B_1 = [0;
+              0];
+Matrix_B_2 = (Matrix_Masse_lin^-1) * [0;
+                                      1];
+Matrix_B_lin=[Matrix_B_1;
+              Matrix_B_2];
 % MATRICE di distribuzione delle uscite:  C = []
-C_lin_theta = [0 1 0 0];
+Matrix_C_theta_lin = [0 1 0 0];
 %Legame algebrico ingresso–uscita:  D = []
-D_lin_theta = 0;
+Matrix_D_theta_lin = 0;
 %Volendo stabilizzare anche il carrello avremo una seconda uscita y = x_1
-C_lin_pos = [1 0 0 0];
+Matrix_C_pos_lin = [1 0 0 0];
 %Legame algebrico ingresso–uscita:  D = []
-D_lin_pos = 0;
+Matrix_D_pos_lin = 0;
 
 %convert dynamic system models to state-space model form.
-LTI_lin_theta = ss(A_lin, B_lin, C_lin_theta, D_lin_theta);
-LTI_lin_position = ss(A_lin, B_lin, C_lin_pos, D_lin_pos);
+LTI_theta_lin = ss(Matrix_A_lin, Matrix_B_lin, Matrix_C_theta_lin, Matrix_D_theta_lin);
+LTI_position_lin = ss(Matrix_A_lin, Matrix_B_lin, Matrix_C_pos_lin, Matrix_D_pos_lin);
+
 
 
 %% EXTRACT DATA FROM Tranfer Function
 % G_ang: FUNZIONE DI TRASFERIMENTO angolare 
-G_ang = tf(LTI_lin_theta)
+G_ang = tf(LTI_theta_lin);
+% check: FISICA REALIZZABILITA'
+[FdT_orderNumerator, FdT_orderDenominator] = getFunctionOrdersNumDen(G_ang);
+% Display the orders
+if FdT_orderNumerator <= FdT_orderDenominator
+    disp('G_ang è FISICAMENTE REALIZZABILE');
+end
+% check: STABILITA'
+FdT_isStable = isstable(G_ang);
+if FdT_isStable
+    disp('G_ang Stabilità: STABLE');
+else
+    disp('G_ang Stabilità: UNSTABLE');
+end
+
+
 % Fattorizzazione ZPK della FdT - MINIMIZZATA
 %G_ang = minreal(zpk(G_ang));
-
-% check: FISICA REALIZZABILITA'
-[order_num, order_den] = getFunctionOrdersNumDen(G_ang);
-
-% Display the orders
-disp(['Order of numerator: ' num2str(order_num)]);
-disp(['Order of denominator: ' num2str(order_den)]);
-
-% check: STABILITA'
-is_G_ang_Stable = isstable(G_ang);
-if is_G_ang_Stable
-    fprintf('\nG_ang Stability: STABLE\n\n');
-else
-    fprintf('\nG_ang Stability: UNSTABLE\n\n');
-end
 
 
 
@@ -174,9 +173,9 @@ plotWithCustomOptions(Request, minreal(F), Options)
 
 % STUDIO DELLA STABILITA' ROBUSTA del sistema in retroazione
 Request = ["Request", "blank", " [G_e_ang] bode"];
-plotWithCustomOptions(Request, blank, Options)
+plotWithCustomOptions(Request, 0, Options)
 [mag, phase, wout] = bode(G_e_ang);     % Assign the plot data to variables
-[~, pm, ~, gm] = margin(G_e_ang)
+[~, pm, ~, gm] = margin(G_e_ang);
 setoptions = bodeoptions;               % Get the default plot options
 setoptions.Grid = 'on';                 % Turn on the grid
 bode(G_e_ang, setoptions);              % Plot the Bode plot with custom options
@@ -211,7 +210,7 @@ step(minreal(G_lin));
 figure(2)
 rlocus(G_lin);
 
-[r, k] = rlocus(G_lin);
+[r, p_k] = rlocus(G_lin);
 
 
 plotWithCustomOptions()
@@ -233,7 +232,7 @@ zpk(G_lin)
 
 
 
-k=29
+p_k=29
 R_ang = -(s+0.4)*(s+4.5)/s/(s+12);
 
 
@@ -243,7 +242,7 @@ R_ang = -(s+0.4)*(s+4.5)/s/(s+12);
 
 
 %FdT posizione
-G_lin_pos = tf(LTI_lin_position);
+G_lin_pos = tf(LTI_position_lin);
 disp ('Transfer function of the linearized model (Cart Position):')
 zpk(G_lin_pos);
 
@@ -344,7 +343,7 @@ MINREAL
 
 %% END Segment
 % Create a figure
-if plot_figureIndex > 1
+if plot_figure_Index > 1
     fig = figure;
 
     % Create a button uicontrol

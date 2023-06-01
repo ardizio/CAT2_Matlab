@@ -17,20 +17,20 @@ function plotWithCustomOptions(Request, Input, Options)
 
 
     % GET from Workspace
-    plot_font_size = evalin('base', 'plot_font_size');
-    plot_from_left = evalin('base', 'plot_from_left'); %#ok<NASGU>
-    plot_from_bottom = evalin('base', 'plot_from_bottom'); %#ok<NASGU>
-    plot_width = evalin('base', 'plot_width');
-    plot_height = evalin('base', 'plot_height');
+    plot_style_fontSize = evalin('base', 'plot_style_fontSize');
+    plot_position_from_left = evalin('base', 'plot_position_from_left'); %#ok<NASGU>
+    plot_position_from_bottom = evalin('base', 'plot_position_from_bottom'); %#ok<NASGU>
+    plot_window_Width = evalin('base', 'plot_window_Width');
+    plot_window_Height = evalin('base', 'plot_window_Height');
 
-    plot_MaxColumns = evalin('base', 'plot_MaxColumns');
-    plot_max_rows = evalin('base', 'plot_max_rows');
-    plot_CurrentColumn = evalin('base', 'plot_CurrentColumn');
-    plot_CurrentRow = evalin('base', 'plot_CurrentRow');
+    plot_device_maxColumns = evalin('base', 'plot_device_maxColumns');
+    plot_device_maxRows = evalin('base', 'plot_device_maxRows');
+    plot_current_Column = evalin('base', 'plot_current_Column');
+    plot_current_Row = evalin('base', 'plot_current_Row');
 
 
     % GET figureIndex from Workspace
-    figureIndex = evalin('base', 'plot_figureIndex');
+    figureIndex = evalin('base', 'plot_figure_Index');
 
     % CREATE new figure
     fig = figure(figureIndex);
@@ -58,42 +58,42 @@ function plotWithCustomOptions(Request, Input, Options)
     end
     % SET xlabel
     if Options(3) ~= "edit_xlabel"
-        xlabel(Options(3), FontSize=plot_font_size, Interpreter='latex')
+        xlabel(Options(3), FontSize=plot_style_fontSize, Interpreter='latex')
     end
     % SET ylabel
     if Options(4) ~= "edit_ylabel"
-        xlabel(Options(4), FontSize=plot_font_size, Interpreter='latex')
+        xlabel(Options(4), FontSize=plot_style_fontSize, Interpreter='latex')
     end
     % SET legend
     if Options(5) ~= "edit_legend"
-        xlabel(Options(5), FontSize=plot_font_size, Interpreter='latex')
+        xlabel(Options(5), FontSize=plot_style_fontSize, Interpreter='latex')
     end
 
     % Desktop Position
-    %fprintf("col: %d\n",plot_CurrentColumn);
-    %fprintf("row: %d\n",plot_CurrentRow);
+    %fprintf("col: %d\n",plot_current_Column);
+    %fprintf("row: %d\n",plot_current_Row);
 
-    if plot_CurrentRow == 1
-        plot_from_bottom = 1200;
+    if plot_current_Row == 1
+        plot_position_from_bottom = 1200;
     else
-        plot_from_bottom = 0;
+        plot_position_from_bottom = 0;
     end
 
-    index_minus_one = plot_CurrentColumn - 1;
-    plot_from_left = index_minus_one * plot_width;
-    %disp(plot_from_left)
+    index_minus_one = plot_current_Column - 1;
+    plot_position_from_left = index_minus_one * plot_window_Width;
+    %disp(plot_position_from_left)
 
-    set(gcf,'position',[plot_from_left,plot_from_bottom,plot_width,plot_height])
+    set(gcf,'position',[plot_position_from_left,plot_position_from_bottom,plot_window_Width,plot_window_Height])
 
-    if plot_CurrentColumn >= plot_MaxColumns
-        plot_CurrentColumn = 1;
-        if plot_CurrentRow < plot_max_rows
-            plot_CurrentRow = plot_CurrentRow + 1;
+    if plot_current_Column >= plot_device_maxColumns
+        plot_current_Column = 1;
+        if plot_current_Row < plot_device_maxRows
+            plot_current_Row = plot_current_Row + 1;
         else
-            plot_CurrentRow = 1;
+            plot_current_Row = 1;
         end
     else
-        plot_CurrentColumn = plot_CurrentColumn + 1;
+        plot_current_Column = plot_current_Column + 1;
     end
 
     
@@ -101,14 +101,14 @@ function plotWithCustomOptions(Request, Input, Options)
     set(fig, 'Name', Request(3));
 
 
-    % RETURN to Workspace plot_figureIndex
+    % RETURN to Workspace plot_figure_Index
     figureIndex = figureIndex + 1;
-    assignin('base', 'plot_figureIndex', figureIndex);
+    assignin('base', 'plot_figure_Index', figureIndex);
 
-    assignin('base', 'plot_CurrentColumn', plot_CurrentColumn);
-    assignin('base', 'plot_CurrentRow', plot_CurrentRow);       
-    assignin('base', 'plot_from_left', plot_from_left);       
-    assignin('base', 'plot_from_bottom', plot_from_bottom);       
+    assignin('base', 'plot_current_Column', plot_current_Column);
+    assignin('base', 'plot_current_Row', plot_current_Row);       
+    assignin('base', 'plot_position_from_left', plot_position_from_left);       
+    assignin('base', 'plot_position_from_bottom', plot_position_from_bottom);       
 
     %fprintf('END plotWithCustomOptions\n');
     hold off
