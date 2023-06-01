@@ -148,21 +148,25 @@ plotWithCustomOptions(plot_f_Request, f_G_e_theta, plot_f_Options)
 
 
 %% Sentitivity functions 
-L_ang = minreal(f_G_theta * f_KR_theta);
+f_L_theta = minreal(f_G_theta * f_KR_theta);
 
-% Funzione di Sensitività [S]
-S = minreal(1/(1+L_ang));
-% Funzione di Sensitività complementare [F]
-F = minreal(L_ang/(1+L_ang));
-% Funzione di Sensitività del controllo [Q]
-Q = minreal(f_KR_theta/(1+L_ang));
+% Funzione di Sensitività [f_Sensitivity_S]
+f_Sensitivity_S = minreal(1/(1+f_L_theta));
+% Funzione di Sensitività complementare [f_Sensitivity_F]
+f_Sensitivity_F = minreal(f_L_theta/(1+f_L_theta));
+% Funzione di Sensitività del controllo [f_Sensitivity_Q]
+f_Sensitivity_Q = minreal(f_KR_theta/(1+f_L_theta));
 
 
-plot_f_Request = ["Request", "step", " [F] risposta al gradino"];
-plotWithCustomOptions(plot_f_Request, F, plot_f_Options)
+plot_f_Request = ["Request", "step", " [f_Sensitivity_F] risposta al gradino"];
+plotWithCustomOptions(plot_f_Request, f_Sensitivity_F, plot_f_Options)
 
-plot_f_Request = ["Request", "rlocus", " [F] rlocus"];
-plotWithCustomOptions(plot_f_Request, minreal(F), plot_f_Options)
+plot_f_Request = ["Request", "rlocus", " [f_Sensitivity_F] rlocus"];
+plotWithCustomOptions(plot_f_Request, minreal(f_Sensitivity_F), plot_f_Options)
+
+
+
+
 
 
 % STUDIO DELLA STABILITA' ROBUSTA del sistema in retroazione
@@ -186,9 +190,9 @@ mindecay   = 1.2;
 mindamping = 0.7;
 maxfreq    = inf;
 Goals      = TuningGoal.Poles(mindecay, mindamping, maxfreq);
-plot_f_Request = ["Request", "blank", " [F] Show Goals"];
-plotWithCustomOptions(plot_f_Request, F, plot_f_Options)
-viewGoal(Goals, F);
+plot_f_Request = ["Request", "blank", " [f_Sensitivity_F] Show Goals"];
+plotWithCustomOptions(plot_f_Request, f_Sensitivity_F, plot_f_Options)
+viewGoal(Goals, f_Sensitivity_F);
 %}
 
 %{
@@ -294,11 +298,11 @@ C_ctrl  = R_lti.C;
 D_ctrl  = R_lti.D;
 
 %% Sentitivity functions 
-L_ang = minreal(G_lin_ang*R);
+f_L_theta = minreal(G_lin_ang*R);
 
-S = minreal(1/(1+L_ang));
-F = minreal(L_ang/(1+L_ang));
-Q = minreal(f_KR_theta/(1+L_ang));
+f_Sensitivity_S = minreal(1/(1+f_L_theta));
+f_Sensitivity_F = minreal(f_L_theta/(1+f_L_theta));
+f_Sensitivity_Q = minreal(f_KR_theta/(1+f_L_theta));
 
 %Tempo di assestamento massimo (entro il 5%) = 1.2s
 
@@ -309,7 +313,7 @@ Q = minreal(f_KR_theta/(1+L_ang));
 % maxfreq    = inf;
 % Goals      = TuningGoal.Poles(mindecay, mindamping, maxfreq);
 % figure(2)
-% viewGoal(Goals, F);
+% viewGoal(Goals, f_Sensitivity_F);
 
 
 %%
