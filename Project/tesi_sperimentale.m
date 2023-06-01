@@ -87,16 +87,30 @@ D_lin_pos = 0;
 LTI_lin_theta = ss(A_lin, B_lin, C_lin_theta, D_lin_theta);
 LTI_lin_position = ss(A_lin, B_lin, C_lin_pos, D_lin_pos);
 
-%FdT angolare
-G_ang = tf(LTI_lin_theta);
 
+%% EXTRACT DATA FROM Tranfer Function
+% G_ang: FUNZIONE DI TRASFERIMENTO angolare 
+G_ang = tf(LTI_lin_theta)
+% Fattorizzazione ZPK della FdT - MINIMIZZATA
+%G_ang = minreal(zpk(G_ang));
 
+% check: FISICA REALIZZABILITA'
+[order_num, order_den] = getFunctionOrdersNumDen(G_ang);
+
+% Display the orders
+disp(['Order of numerator: ' num2str(order_num)]);
+disp(['Order of denominator: ' num2str(order_den)]);
+
+% check: STABILITA'
 is_G_ang_Stable = isstable(G_ang);
 if is_G_ang_Stable
     fprintf('\nG_ang Stability: STABLE\n\n');
 else
     fprintf('\nG_ang Stability: UNSTABLE\n\n');
 end
+
+
+
 
 
 %{
@@ -113,21 +127,13 @@ zeros = zero(G_ang_minreal);
 disp(zeros);
 %}
 
-% Display zero/pole/gain model
-%disp ('FdT of linearized model (theta):')
-zpk_G_ang = zpk(G_ang);
 
-G_ang = minreal(G_ang);
-%{
-% G_ang rlocus
-Request = ["Request", "rlocus", " [G_ang_minreal] Luogo delle radici"];
+
+% G_ang rlocus [OPEN LOOP]
+Request = ["Request", "rlocus", " [G_ang OPEN LOOP] Luogo delle radici "];
 Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
 plotWithCustomOptions(Request, G_ang, Options)
-%}
 %% Bode over G_ang
-
-
-
 %Demo Regolatore
 R_ang = -(s+0.4)*(s+4.5)/s/(s+13);
 %Gain
@@ -136,8 +142,8 @@ K = 23;
 R_ang = K * R_ang;
 % Minreal pole-zero
 G_e_ang = minreal(G_ang * R_ang);
-% G_e_ang rlocus
-Request = ["Request", "rlocus", " [G_e_ang] Luogo delle radici"];
+% G_e_ang rlocus [CLOSED LOOP]
+Request = ["Request", "rlocus", " [G_e_ang CLOSED LOOP] Luogo delle radici"];
 Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 plotWithCustomOptions(Request, G_e_ang, Options)
 
@@ -151,9 +157,13 @@ plotWithCustomOptions(Request, G_e_ang, Options)
 %% Sentitivity functions 
 L_ang = minreal(G_ang * R_ang);
 
+% Funzione di Sensitività [S]
 S = minreal(1/(1+L_ang));
+% Funzione di Sensitività complementare [F]
 F = minreal(L_ang/(1+L_ang));
+% Funzione di Sensitività del controllo [Q]
 Q = minreal(R_ang/(1+L_ang));
+
 
 Request = ["Request", "step", " [F] risposta al gradino"];
 plotWithCustomOptions(Request, F, Options)
@@ -162,7 +172,7 @@ Request = ["Request", "rlocus", " [F] rlocus"];
 plotWithCustomOptions(Request, minreal(F), Options)
 
 
-
+% STUDIO DELLA STABILITA' ROBUSTA del sistema in retroazione
 Request = ["Request", "blank", " [G_e_ang] bode"];
 plotWithCustomOptions(Request, blank, Options)
 [mag, phase, wout] = bode(G_e_ang);     % Assign the plot data to variables
