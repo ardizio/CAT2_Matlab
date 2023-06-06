@@ -30,18 +30,18 @@ B   = [1/La;
           0];
 C   = [0 1];
 D   = 0;
-LTI = ss(A, B, C, D);
-G_sp   = tf(LTI);
+LTI = ss(A, B, C, D); % Spazio degli Stati
+G_sp   = tf(LTI);     % FdT
 %% Simulink settings
-MaxStep  = 5e-5; % solver max step size
-RelTol   = 1e-3; % solver relative tolerance
+MaxStep  = 5e-5;   % solver max step size
+RelTol   = 1e-3;   % solver relative tolerance
 T_f      = 0.3;    % final simulation time
-% initial conditions per SIMULINK
+% Condizioni iniziali per SIMULINK
 I_0      = 0;
 w_0      = 0;
 theta_0  = 0;
 %% Part 1: Speed control PID ANELLO APERTO [calcolo il modello approssimato singolo polo per tuning PID della velocita']
-% Calcolo la risposta al gradino, creo y e t separate
+% Calcolo la risposta al gradino, estraggo [y, t] separate
 [y, t] = step(G_sp);
 %% MOSTRO risposta al gradino dello Scenario senza distrunbo (No-noise scenario)
 figure(1)
@@ -53,7 +53,7 @@ box on
 xlim([0, t(end)])
 %% Static gain
 mu = y(end);
-%% Method 1
+%% Method 1 - PUNTO DI FLESSO per calcolo dei guadagni
 dy        = diff(y);
 dt        = diff(t);
 [dy_j, j] = max(dy);
@@ -73,7 +73,7 @@ plot([T+tau t(end)], [mu mu], ...
 G_approx1 = mu*exp(-T*s)/(1 + tau*s);
 y1        = step(G_approx1, t);
 plot(t, y1, LineWidth=plot_line_width, Color=[0.9290, 0.6940, 0.1250])
-%% Method 2
+%% Method 2 - METODO DELLE AREE (maggiore robustezza se uso segnale con disturbo)
 A_1       = trapz(t, mu - y);
 T_tau     = A_1/mu;
 j         = 1;
@@ -90,7 +90,7 @@ G_approx2 = mu*exp(-T*s)/(1 + tau*s);
 y2        = step(G_approx2, t);
 plot(t, y2, LineWidth=plot_line_width, Color=[0.4940, 0.1840, 0.5560])
 legend('Data', '', '', 'Method 1', 'Method 2')
-%% Noisy scenario
+%% Noisy scenario (maggiore rovustezza con metodo delle aree)
 y_n = y + (0.5*rand(size(y)) - 0.25);
 figure(2)
 set(gcf,'position',[plot_x0,plot_y0,plot_width,plot_height])
@@ -105,7 +105,7 @@ y_avg     = movmean(y_n, 10);
 plot(t, y_avg, LineWidth=plot_line_width, Color=[0 0 1])
 %% Static gain
 mu_n      = y_avg(end);
-%% Method 1
+%% Method 1 - PUNTO DI FLESSO
 dy        = diff(y_avg);
 dt        = diff(t);
 [dy_j, j] = max(dy);
@@ -125,7 +125,7 @@ plot([T+tau t(end)], [mu mu], ...
 G_approx1 = mu*exp(-T*s)/(1 + tau*s);
 y1_n      = step(G_approx1, t);
 plot(t, y1_n, LineWidth=plot_line_width, Color=[0.9290, 0.6940, 0.1250])
-%% Method 2
+%% Method 2 - METODO DELLE AREE
 A_1       = trapz(t, mu_n - y_n);
 T_tau     = A_1/mu_n;
 j         = 1;
@@ -144,14 +144,14 @@ plot(t, y2_n, LineWidth=plot_line_width, Color=[0.4940, 0.1840, 0.5560])
 legend('Data', 'Filtered data', '', '', 'Method 1', 'Method 2')
 %% PID tuning ANELLO APERTO
 % using the parameters from the noisy scenario - method 2
-%% from Ziegler-Nichols table CAT2_272
+%% from Ziegler-Nichols (table CAT2_272)
 K_p_ZN = 1.2*tau/mu/T;
 T_i_ZN = 2*T;
 T_d_ZN = 0.5*T;
 
 tau_p_ZN = T_d_ZN/10;  %/10 è arbitratio per rendere più veloce il Proporzionale rispetto derivativo
-PID_ZN   = K_p_ZN*(1 + 1/T_i_ZN/s + T_d_ZN*s)/(1 + tau_p_ZN*s);  %R(s)= PID function
-% Passo allo spazio degli stati
+PID_ZN   = K_p_ZN*(1 + 1/T_i_ZN/s + T_d_ZN*s)/(1 + tau_p_ZN*s);  %R(s)= PID function (equivalente a slides)
+% Passo allo spazio degli stati (UTILE PER PASSAGGIO A DISCRETO e per TUNIG PRESTAZIONALE)
 PID_lti = ss(PID_ZN);
 A_ZN  = PID_lti.A;
 B_ZN  = PID_lti.B;
@@ -163,7 +163,7 @@ T_i_CC = tau*(2.5*(T/tau)*(1 + (T/tau)/5))/(1 + 0.6*T/tau);
 T_d_CC = 0.37*T/(1 + 0.2*T/tau);
 
 tau_p_CC = T_d_CC/10;
-PID_CC   = K_p_CC*(1 + 1/T_i_CC/s + T_d_CC*s)/(1 + tau_p_CC*s); %R(s)= PID function
+PID_CC   = K_p_CC*(1 + 1/T_i_CC/s + T_d_CC*s)/(1 + tau_p_CC*s); %R(s)= PID function (equivalente a slides)
 % Passo allo spazio degli stati
 PID_lti = ss(PID_CC);
 A_CC  = PID_lti.A;
@@ -171,18 +171,18 @@ B_CC  = PID_lti.B;
 C_CC  = PID_lti.C;
 D_CC  = PID_lti.D;
 %% Integral Absolute Error (IAE)
-A = 1.086;       %5bis26 IAE PID ->P line, column A
-B = -0.869;      %5bis26 IAE PID ->P line, column B
-Y = A*(T/tau)^B; %5bis26 IAE PID viola
-K_p_IAE = Y/mu;  %5bis26 IAE PID viola
+A = 1.086;        %5bis26 IAE PID ->P line, column A
+B = -0.869;       %5bis26 IAE PID ->P line, column B
+Y = A*(T/tau)^B;  %5bis26 IAE PID viola
+K_p_IAE = Y/mu;   %5bis26 IAE PID viola
 
 A = 0.740;        %5bis26 IAE PID ->I line, column A
 B = -0.130;       %5bis26 IAE PID ->I line, column A
 Y_star = A + B*T/tau;
 T_i_IAE = tau/Y_star;
 
-A = 0.348;       %5bis26 IAE PID ->D line, column A
-B = 0.914;       %5bis26 IAE PID ->D line, column B
+A = 0.348;        %5bis26 IAE PID ->D line, column A
+B = 0.914;        %5bis26 IAE PID ->D line, column B
 Y = A*(T/tau)^B;
 T_d_IAE = tau*Y;
 
@@ -211,7 +211,7 @@ A_PID   = PID_lti.A;
 B_PID   = PID_lti.B;
 C_PID   = PID_lti.C;
 D_PID   = PID_lti.D;
-%% Anti-windup design DA RIGUARDATE
+%% Anti-windup design DA RIGUARDARE
 N_R   = K_p*(1 + T_i*s + T_i*T_d*s^2);
 D_R   = T_i*s*(1 + tau_p*s);
 

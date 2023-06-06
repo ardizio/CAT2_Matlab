@@ -122,15 +122,19 @@ disp(f_G_theta_Zeros);
 
 
 
-% f_G_theta rlocus [OPEN LOOP]
+% f_G_theta rlocus [OPEN LOOP] {rlocusplot(G)}
 plot_f_Request = ["Request", "rlocus", " [G_theta OPEN LOOP] Luogo delle radici "];
 plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
 plotWithCustomOptions(plot_f_Request, f_G_theta, plot_f_Options)
 %% Bode over f_G_theta
 
+% CERCO IL GUADAGNO STABILIZZANTE
+% k scelto per ottenere due poli reali
+
 % Seems Good
 f_K_theta_Gain = 28;
-f_R_theta = -(s+0.4)*(s+4.5)/s/(s+12);
+%f_R_theta = -(s+0.1289)*(s+5)/s/(s+12);
+f_R_theta = -(s+0.1289)*(s+5.5)/s/(s+12);
 
 % Our is Worse
 % % f_R_theta = -(s+0.4)*(s+4.5)/s/(s+13);  OLD
@@ -153,7 +157,17 @@ plot_f_Request = ["Request", "step", " [f_G_e_theta] Step response"];
 plotWithCustomOptions(plot_f_Request, f_G_e_theta, plot_f_Options)
 %}
 
+%% Proprietà del sistema stabilizzato
+% MOSTRO: diagramma di Bode di f_G_e_theta {bodeplot(G_s)}
+plot_f_Request = ["Request", "bode", " Bode di f_G_e_theta"];
+plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+plotWithCustomOptions(plot_f_Request, f_G_e_theta, plot_f_Options)
 
+% MOSTRO: risposta al gradino
+plot_f_Request = ["Request", "step", " Risposta al gradino del sistema stabilizzato"];
+plot_f_Options = ["Grid_on", "Box_off", "tempo [s]", "posizione [rad]", "edit_legend"];
+plotWithCustomOptions(plot_f_Request, f_G_e_theta, plot_f_Options)
+[y, t] = step(f_G_e_theta); % salva in y la risposta e in t il tempo
 
 %% Sentitivity functions 
 f_L_theta = minreal(f_G_theta * f_KR_theta);
@@ -176,19 +190,19 @@ plotWithCustomOptions(plot_f_Request, minreal(f_Sensitivity_F), plot_f_Options)
 
 
 
-
-% STUDIO DELLA STABILITA' ROBUSTA del sistema in retroazione
-plot_f_Request = ["Request", "blank", " [G_e_theta] bode"];
-plotWithCustomOptions(plot_f_Request, 0, plot_f_Options)
-[mag, phase, wout] = bode(f_G_e_theta);     % Assign the plot data to variables
-[~, pm, ~, gm] = margin(f_G_e_theta);
-setoptions = bodeoptions;               % Get the default plot options
-setoptions.Grid = 'on';                 % Turn on the grid
-bode(f_G_e_theta, setoptions);              % Plot the Bode plot with custom options
-hold on;
-% Display phase margin and gain margin on the Bode plot
-text(0.5, -180+pm, sprintf('Pm = %.2f deg', pm), 'Color', 'red');
-text(0.5/gm, 0, sprintf('Gm = %.2f dB', 20*log10(gm)), 'Color', 'blue');
+% 
+% % STUDIO DELLA STABILITA' ROBUSTA del sistema in retroazione
+% plot_f_Request = ["Request", "blank", " [G_e_theta] bode"];
+% plotWithCustomOptions(plot_f_Request, 0, plot_f_Options)
+% [mag, phase, wout] = bode(f_G_e_theta);     % Assign the plot data to variables
+% [~, pm, ~, gm] = margin(f_G_e_theta);
+% setoptions = bodeoptions;               % Get the default plot options
+% setoptions.Grid = 'on';                 % Turn on the grid
+% bode(f_G_e_theta, setoptions);              % Plot the Bode plot with custom options
+% hold on;
+% % Display phase margin and gain margin on the Bode plot
+% text(0.5, -180+pm, sprintf('Pm = %.2f deg', pm), 'Color', 'red');
+% text(0.5/gm, 0, sprintf('Gm = %.2f dB', 20*log10(gm)), 'Color', 'blue');
 
 
 %% Goals

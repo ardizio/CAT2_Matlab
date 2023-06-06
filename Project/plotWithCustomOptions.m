@@ -9,6 +9,7 @@ plotWithCustomOptions(plot_Request, function, plot_Options)
 functions supported:
 - "rlocus"
 - "step"
+- "bode"
 %}
 function plotWithCustomOptions(Request, Input, Options)
 
@@ -41,9 +42,11 @@ function plotWithCustomOptions(Request, Input, Options)
     %Rolloin' && PLOTTIN'
     if Request(1) == "Request"
        if Request(2) == "rlocus"
-           rlocus(Input);
+           rlocusplot(Input);
        elseif Request(2) == "step"
            step(Input);
+       elseif Request(2) == "bode"
+           bodeplot(Input);
        end
     end
    

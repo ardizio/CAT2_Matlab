@@ -79,6 +79,10 @@ p61 Linearized system around theta_star = pi/3
 
 p62_inverted_pendulum_control
 
+p63_MarginiStabilita_FdS
+p69_Taratura_PID
+
+p70_DC [big]
 
 ---------------------------------------------------------------------------
 
