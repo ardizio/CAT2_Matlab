@@ -122,14 +122,13 @@ disp(f_G_theta_Zeros);
 
 
 
-% f_G_theta rlocus [OPEN LOOP] {rlocusplot(G)}
-plot_f_Request = ["Request", "rlocus", " [G_theta OPEN LOOP] Luogo delle radici "];
-plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-plotWithCustomOptions(plot_f_Request, f_G_theta, plot_f_Options)
+% % f_G_theta rlocus [OPEN LOOP] {rlocusplot(G)}
+% plot_f_Request = ["Request", "rlocus", " [G_theta OPEN LOOP] Luogo delle radici "];
+% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_G_theta, plot_f_Options)
 %% Bode over f_G_theta
 
 % CERCO IL GUADAGNO STABILIZZANTE
-% k scelto per ottenere due poli reali
 
 % Seems Good
 f_K_theta_Gain = 28;
@@ -150,26 +149,15 @@ f_G_e_theta = minreal(f_G_theta * f_KR_theta);
 % f_G_e_theta rlocus [CLOSED LOOP]
 plot_f_Request = ["Request", "rlocus", " [G_e_theta CLOSED LOOP] Luogo delle radici"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-plotWithCustomOptions(plot_f_Request, f_G_e_theta, plot_f_Options)
+displayPlot(plot_f_Request, f_G_e_theta, plot_f_Options)
 
 %{
 plot_f_Request = ["Request", "step", " [f_G_e_theta] Step response"];
-plotWithCustomOptions(plot_f_Request, f_G_e_theta, plot_f_Options)
+displayPlot(plot_f_Request, f_G_e_theta, plot_f_Options)
 %}
+%% Analisi del sistema di controllo progettato
 
-%% Proprietà del sistema stabilizzato
-% MOSTRO: diagramma di Bode di f_G_e_theta {bodeplot(G_s)}
-plot_f_Request = ["Request", "bode", " Bode di f_G_e_theta"];
-plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-plotWithCustomOptions(plot_f_Request, f_G_e_theta, plot_f_Options)
-
-% MOSTRO: risposta al gradino
-plot_f_Request = ["Request", "step", " Risposta al gradino del sistema stabilizzato"];
-plot_f_Options = ["Grid_on", "Box_off", "tempo [s]", "posizione [rad]", "edit_legend"];
-plotWithCustomOptions(plot_f_Request, f_G_e_theta, plot_f_Options)
-[y, t] = step(f_G_e_theta); % salva in y la risposta e in t il tempo
-
-%% Sentitivity functions 
+% Funzione d'Anello
 f_L_theta = minreal(f_G_theta * f_KR_theta);
 
 % Funzione di Sensitività [f_Sensitivity_S]
@@ -179,21 +167,38 @@ f_Sensitivity_F = minreal(f_L_theta/(1+f_L_theta));
 % Funzione di Sensitività del controllo [f_Sensitivity_Q]
 f_Sensitivity_Q = minreal(f_KR_theta/(1+f_L_theta));
 
+%% Proprietà del sistema stabilizzato
+% MOSTRO: diagramma di Bode di f_G_e_theta + display margin f_L_theta
+plot_f_Request = ["Request", "margin", " Bode di f_G_e_theta + display margin f_L_theta"];
+plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+displayPlot(plot_f_Request, f_L_theta, plot_f_Options)
+
+% % MOSTRO: Margini con Bode di f_L_theta {margin(f_L_theta))}
+% plot_f_Request = ["Request", "margin", " margin di f_L_theta"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_L_theta, plot_f_Options)
+% % MOSTRO: risposta al gradino di f_G_e_theta
+% plot_f_Request = ["Request", "step", " Risposta al gradino del sistema stabilizzato"];
+% plot_f_Options = ["Grid_on", "Box_off", "tempo [s]", "posizione [rad]", "edit_legend"];
+% displayPlot(plot_f_Request, f_G_e_theta, plot_f_Options)
+% [y, t] = step(f_G_e_theta); % salva in y la risposta e in t il tempo
+
+
+%% Analisi del sistema di controllo progettato
 
 plot_f_Request = ["Request", "step", " [Sensitivity_F] risposta al gradino"];
-plotWithCustomOptions(plot_f_Request, f_Sensitivity_F, plot_f_Options)
+displayPlot(plot_f_Request, f_Sensitivity_F, plot_f_Options)
 
-plot_f_Request = ["Request", "rlocus", " [Sensitivity_F] rlocus"];
-plotWithCustomOptions(plot_f_Request, minreal(f_Sensitivity_F), plot_f_Options)
-
-
-
+% plot_f_Request = ["Request", "rlocus", " [Sensitivity_F] rlocus"];
+% displayPlot(plot_f_Request, f_Sensitivity_F, plot_f_Options)
+% Tracciamento dei poli nel piano complesso
+% pzplot(f_G_theta_ZPK, f_Sensitivity_F, f_G_e_theta)
 
 
 % 
 % % STUDIO DELLA STABILITA' ROBUSTA del sistema in retroazione
 % plot_f_Request = ["Request", "blank", " [G_e_theta] bode"];
-% plotWithCustomOptions(plot_f_Request, 0, plot_f_Options)
+% displayPlot(plot_f_Request, 0, plot_f_Options)
 % [mag, phase, wout] = bode(f_G_e_theta);     % Assign the plot data to variables
 % [~, pm, ~, gm] = margin(f_G_e_theta);
 % setoptions = bodeoptions;               % Get the default plot options
@@ -213,7 +218,7 @@ mindamping = 0.7;
 maxfreq    = inf;
 Goals      = TuningGoal.Poles(mindecay, mindamping, maxfreq);
 plot_f_Request = ["Request", "blank", " [f_Sensitivity_F] Show Goals"];
-plotWithCustomOptions(plot_f_Request, f_Sensitivity_F, plot_f_Options)
+displayPlot(plot_f_Request, f_Sensitivity_F, plot_f_Options)
 viewGoal(Goals, f_Sensitivity_F);
 %}
 
@@ -351,7 +356,7 @@ MINREAL
 if plot_figure_Index > 1
     plot_closeAll = figure;
     % Create a button uicontrol
-    plot_closeAll_button = uicontrol('Style', 'pushbutton', 'String', 'Chiudi Tutto', ...
+    plot_closeAll_button = uicontrol('Style', 'pushbutton', 'String', 'Close all Plots', ...
         'Position', [20 20 100 30], 'Callback', @clear_plots);
     % position in screen and dimensions
     set(gcf,'position',[800,500,140,50])

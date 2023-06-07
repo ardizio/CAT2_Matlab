@@ -32,7 +32,7 @@
 #define SWITCH_BLACK A3  // Switch Black  [analog3]
 #define SWITCH_WHITE A1  // Switch White  [analog1]
 #define VCC_PIN 31       // Power supply
-#define THR 600          // GIVEN D
+#define AnalogThreshold 600          // GIVEN D?
 
 #define CONST 0.0208     // per la conversione da angoli in cm
 #define OFFSET_ANGLE 10  // da 0 a 4096 come da  0° a 360°  // da ricalibrare // forse di 0.6° [15]
@@ -41,7 +41,7 @@
 // CONTROL VARIABLES
 #define MAX_ERROR 30      // GIVEN D?
 #define MIN_ERROR 3       // GIVEN D?
-
+#define REF_ANGLE 180     //
 #define INIT_POSE 70      // GIVEN
 
 // Casistiche possibili
@@ -121,15 +121,15 @@ void loop() {
   int value_Switch_White = analogRead(SWITCH_WHITE);
 
   // [ 1 ]
-  //Controllo che i valori degli switch rientrino all'inteno del limite imposto THR
-  if (value_Switch_Black > THR){
+  //Controllo che i valori degli switch rientrino all'inteno del limite imposto AnalogThreshold
+  if (value_Switch_Black > AnalogThreshold){
     isActive_Switch_Black = true;
   }
   else{
     isActive_Switch_Black = false;
   }
 
-  if (value_Switch_White > THR){
+  if (value_Switch_White > AnalogThreshold){
     isActive_Switch_White = true;
   }
   else{
@@ -200,7 +200,7 @@ void loop() {
 
   // [ 4 ]
   // TIME HANDLING
-  msTime_Current = micros();                           //GET microseconds since Boot
+  msTime_Current = micros();                            //GET microseconds since Boot
   deltaTime = (msTime_Current - msTime_Past) / 1000000.0;
   msTime_Past = msTime_Current;
   
@@ -258,6 +258,10 @@ void loop() {
     case WAIT: {
       Serial.println("WAITING");
       speedControl = 0;                       // RESET speedControl at 0
+
+      //trovare l'errore
+      ang_error = REF_ANGLE - Angle1_Pendulum_minus_Offset
+
       e_ctrl = [0, 0, 0];
       u_ctrl = [0, 0, 0];
       
@@ -268,12 +272,18 @@ void loop() {
       
       motorSpeed = 0;                         // RESET motorSpeed at 0
 
+      //INIT e[], u[] at zero
+
       break;
     }
       
     // Regulator Control State
     case CTRL:{
      
+      //trovare l'errore
+      ang_error = REF_ANGLE - Angle1_Pendulum_minus_Offset
+
+      ang_radiants = ang_error * 3,14 / 180
       //TBD IMPLEMENT YOUR CONTROLLER HERE
       /*
       anfolo_errore = riferimento - angolo_del_pendolo

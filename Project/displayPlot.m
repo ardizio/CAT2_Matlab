@@ -4,16 +4,16 @@
 
 plot_f_Request = ["Request", "function", "plot_name"];
 plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-plotWithCustomOptions(plot_Request, function, plot_Options)
+displayPlot(plot_Request, function, plot_Options)
 
 functions supported:
 - "rlocus"
 - "step"
 - "bode"
 %}
-function plotWithCustomOptions(Request, Input, Options)
+function displayPlot(Request, Input, Options)
 
-    %fprintf('START plotWithCustomOptions \n');
+    %fprintf('START displayPlot \n');
 
 
 
@@ -45,6 +45,8 @@ function plotWithCustomOptions(Request, Input, Options)
            rlocusplot(Input);
        elseif Request(2) == "step"
            step(Input);
+       elseif Request(2) == "margin"
+           margin(Input);
        elseif Request(2) == "bode"
            bodeplot(Input);
        end
@@ -99,9 +101,13 @@ function plotWithCustomOptions(Request, Input, Options)
         plot_current_Column = plot_current_Column + 1;
     end
 
-    
+    % Set visible title name
+    % title(Request(3), FontSize=plot_style_fontSize, Interpreter='none')
 
+
+    % Set window name
     set(fig, 'Name', Request(3));
+
 
 
     % RETURN to Workspace plot_figure_Index
@@ -113,7 +119,7 @@ function plotWithCustomOptions(Request, Input, Options)
     assignin('base', 'plot_position_from_left', plot_position_from_left);       
     assignin('base', 'plot_position_from_bottom', plot_position_from_bottom);       
 
-    %fprintf('END plotWithCustomOptions\n');
+    %fprintf('END displayPlot\n');
     hold off
 
 end
