@@ -43,7 +43,7 @@ p_Jb = 0;            % Inertia p_mb
 init_v0 = 0;         % to SLX
 init_x0 = 0;         % to SLX
 init_omega0 = 0;     % to SLX
-init_theta0= pi/12;  % to SLX
+init_angle0= pi/12;  % to SLX
 %% Transfer function variable
 s = tf('s');
 %% Simulink settings
@@ -73,115 +73,133 @@ Matrix_B_2 = (Matrix_Masse_lin^-1) * [0;
 Matrix_B_lin=[Matrix_B_1;
               Matrix_B_2];
 % MATRICE di distribuzione delle uscite:  C = []
-Matrix_C_theta_lin = [0 1 0 0];
+Matrix_C_angle_lin = [0 1 0 0];
 %Legame algebrico ingresso–uscita:  D = []
-Matrix_D_theta_lin = 0;
+Matrix_D_angle_lin = 0;
 %Volendo stabilizzare anche il carrello avremo una seconda uscita y = x_1
 Matrix_C_pos_lin = [1 0 0 0];
 %Legame algebrico ingresso–uscita:  D = []
 Matrix_D_pos_lin = 0;
 
 %convert dynamic system models to state-space model form.
-LTI_theta_lin = ss(Matrix_A_lin, Matrix_B_lin, Matrix_C_theta_lin, Matrix_D_theta_lin);
+LTI_angle_lin = ss(Matrix_A_lin, Matrix_B_lin, Matrix_C_angle_lin, Matrix_D_angle_lin);
 LTI_position_lin = ss(Matrix_A_lin, Matrix_B_lin, Matrix_C_pos_lin, Matrix_D_pos_lin);
 
 
 
 %% EXTRACT DATA FROM Tranfer Function
-% f_G_theta: FUNZIONE DI TRASFERIMENTO angolare 
-f_G_theta = tf(LTI_theta_lin);
-% check: FISICA REALIZZABILITA'
-[f_G_theta_orderNum, f_G_theta_orderDen] = getFunctionOrdersNumDen(f_G_theta);
-% Display the orders
-if f_G_theta_orderNum <= f_G_theta_orderDen
-    disp('f_G_theta è FISICAMENTE REALIZZABILE');
-end
-% check: STABILITA'
-f_G_theta_isStable = isstable(f_G_theta);
-if f_G_theta_isStable
-    disp('f_G_theta Stabilità: STABILE');
-else
-    disp('f_G_theta Stabilità: INSTABILE');
-end
 
-
-% Fattorizzazione ZPK della FdT - MINIMIZZATA
-fprintf('\nMINREAL (realization or pole-zero):');
-f_G_theta_ZPK = minreal(zpk(f_G_theta))
-
-
+% f_G_angle: FUNZIONE DI TRASFERIMENTO angolare 
+f_G_angle = tf(LTI_angle_lin);
+f_G_angle = minreal(zpk(f_G_angle))
 % Posizione Poli
-fprintf('\n f_G_theta POLI:');
-f_G_theta_Poles = pole(f_G_theta_ZPK);
-disp(f_G_theta_Poles);
+fprintf('\n f_G_angle POLI:');
+f_G_angle_Poles = pole(f_G_angle);
+disp(f_G_angle_Poles);
 % Posizione Zeri
-fprintf('\n f_G_theta ZERI :');
-f_G_theta_Zeros = zero(f_G_theta_ZPK);
-disp(f_G_theta_Zeros);
+fprintf('\n f_G_angle ZERI :');
+f_G_angle_Zeros = zero(f_G_angle);
+disp(f_G_angle_Zeros);
 
+% f_G_position: FUNZIONE DI TRASFERIMENTO posizionale
+f_G_position = tf(LTI_position_lin);
+f_G_position = minreal(zpk(f_G_position))
+% Posizione Poli
+fprintf('\n f_G_angle POLI:');
+f_G_position_Poles = pole(f_G_position);
+disp(f_G_position_Poles);
+% Posizione Zeri
+fprintf('\n f_G_angle ZERI :');
+f_G_position_Zeros = zero(f_G_position);
+disp(f_G_position_Zeros);
 
+% Notiamo che il denominatore di f_G_angle e f_G_position ha gli stessi
+% zeri. Ma ho poli differenti. f_G_angle ha un polo nell'origine.
 
-
-% % f_G_theta rlocus [OPEN LOOP] {rlocusplot(G)}
-% plot_f_Request = ["Request", "rlocus", " [G_theta OPEN LOOP] Luogo delle radici "];
+%% Analisi RISPOSTE all impulso e al gradino
+% %  f_G_angle
+% plot_f_Request = ["Request", "impulse", " [f_G_angle] Risposta impulso"];
 % plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_G_theta, plot_f_Options)
-%% Bode over f_G_theta
+% displayPlot(plot_f_Request, f_G_angle, plot_f_Options)
+% plot_f_Request = ["Request", "stepplot", " [f_G_angle] Risposta gradino"];
+% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_G_angle, plot_f_Options)
+% % f_G_position 
+% plot_f_Request = ["Request", "impulse", " [f_G_position] Risposta impulso"];
+% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_G_position, plot_f_Options)
+% plot_f_Request = ["Request", "stepplot", " [f_G_position] Risposta gradino"];
+% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_G_position, plot_f_Options)
 
+%% Obiettivi di controllo
+% Tempo di Assestamento: T_a5 <= 1.2 secondi
+% Fare in modo che il sistema sia in grado di annullare un disturbo d(t) in
+% ingresso all'angolo theta
+
+% Sistema è BIBO, 2 uscite e 1 ingresso. (NOT SISO)
+
+% Sviluppiamo un controllore che mantenga l'asta del carrello nella
+% posizione di equilibrio instabile, e successivamente un controllore in
+% cascata per stabilizzare anche la posizione del carrello. Sarà necessario
+% uno studio mediante il luogo delle radici per garantire BIBO stabilità
+% CLOSED LOOP [C_ang] per poi progettare un secondo controllore [C_pos]
+% inserito in catena diretta al nuovo sitema
+
+%% CONTROLLO dell'Angolo
+
+
+%% Bode over f_G_angle
 % CERCO IL GUADAGNO STABILIZZANTE
-
 % Seems Good
-f_K_theta_Gain = 28;
-%f_R_theta = -(s+0.1289)*(s+5)/s/(s+12);
-f_R_theta = -(s+0.1289)*(s+5.5)/s/(s+12);
-
+f_K_angle_Gain = 28;
+%f_R_angle = -(s+0.1289)*(s+5)/s/(s+12);
+f_R_angle = -(s+0.1289)*(s+5.5)/s/(s+12);
 % Our is Worse
-% % f_R_theta = -(s+0.4)*(s+4.5)/s/(s+13);  OLD
-% f_R_theta = -(s+0.2)*(s+5.6680)/s/(s+14); improve NEWER
+% % f_R_angle = -(s+0.4)*(s+4.5)/s/(s+13);  OLD
+% f_R_angle = -(s+0.2)*(s+5.6680)/s/(s+14); improve NEWER
 % %Gain
-% f_K_theta_Gain = 22;
-
-
+% f_K_angle_Gain = 22;
 % Gain * Regolatore
-f_KR_theta = f_K_theta_Gain * f_R_theta;
+f_KR_angle = f_K_angle_Gain * f_R_angle;
 % Minreal pole-zero
-f_G_e_theta = minreal(f_G_theta * f_KR_theta);
-% f_G_e_theta rlocus [CLOSED LOOP]
-plot_f_Request = ["Request", "rlocus", " [G_e_theta CLOSED LOOP] Luogo delle radici"];
+f_G_e_angle = minreal(f_G_angle * f_KR_angle);
+% f_G_e_angle rlocus [CLOSED LOOP]
+plot_f_Request = ["Request", "rlocus", " [G_e_angle CLOSED LOOP] Luogo delle radici"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, f_G_e_theta, plot_f_Options)
+displayPlot(plot_f_Request, f_G_e_angle, plot_f_Options)
 
 %{
-plot_f_Request = ["Request", "step", " [f_G_e_theta] Step response"];
-displayPlot(plot_f_Request, f_G_e_theta, plot_f_Options)
+plot_f_Request = ["Request", "step", " [f_G_e_angle] Step response"];
+displayPlot(plot_f_Request, f_G_e_angle, plot_f_Options)
 %}
-%% Analisi del sistema di controllo progettato
+%% Analisi del sistema di controllo progettato 
 
 % Funzione d'Anello
-f_L_theta = minreal(f_G_theta * f_KR_theta);
+f_L_angle = minreal(f_G_angle * f_KR_angle);
 
 % Funzione di Sensitività [f_Sensitivity_S]
-f_Sensitivity_S = minreal(1/(1+f_L_theta));
+f_Sensitivity_S = minreal(1/(1+f_L_angle));
 % Funzione di Sensitività complementare [f_Sensitivity_F]
-f_Sensitivity_F = minreal(f_L_theta/(1+f_L_theta));
+f_Sensitivity_F = minreal(f_L_angle/(1+f_L_angle));
 % Funzione di Sensitività del controllo [f_Sensitivity_Q]
-f_Sensitivity_Q = minreal(f_KR_theta/(1+f_L_theta));
+f_Sensitivity_Q = minreal(f_KR_angle/(1+f_L_angle));
 
 %% Proprietà del sistema stabilizzato
-% MOSTRO: diagramma di Bode di f_G_e_theta + display margin f_L_theta
-plot_f_Request = ["Request", "margin", " Bode di f_G_e_theta + display margin f_L_theta"];
+% MOSTRO: diagramma di Bode di f_G_e_angle + display margin f_L_angle
+plot_f_Request = ["Request", "margin", " Bode di f_G_e_angle + display margin f_L_angle"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, f_L_theta, plot_f_Options)
+displayPlot(plot_f_Request, f_L_angle, plot_f_Options)
 
-% % MOSTRO: Margini con Bode di f_L_theta {margin(f_L_theta))}
-% plot_f_Request = ["Request", "margin", " margin di f_L_theta"];
+% % MOSTRO: Margini con Bode di f_L_angle {margin(f_L_angle))}
+% plot_f_Request = ["Request", "margin", " margin di f_L_angle"];
 % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_L_theta, plot_f_Options)
-% % MOSTRO: risposta al gradino di f_G_e_theta
+% displayPlot(plot_f_Request, f_L_angle, plot_f_Options)
+% % MOSTRO: risposta al gradino di f_G_e_angle
 % plot_f_Request = ["Request", "step", " Risposta al gradino del sistema stabilizzato"];
 % plot_f_Options = ["Grid_on", "Box_off", "tempo [s]", "posizione [rad]", "edit_legend"];
-% displayPlot(plot_f_Request, f_G_e_theta, plot_f_Options)
-% [y, t] = step(f_G_e_theta); % salva in y la risposta e in t il tempo
+% displayPlot(plot_f_Request, f_G_e_angle, plot_f_Options)
+% [y, t] = step(f_G_e_angle); % salva in y la risposta e in t il tempo
 
 
 %% Analisi del sistema di controllo progettato
@@ -192,18 +210,18 @@ displayPlot(plot_f_Request, f_Sensitivity_F, plot_f_Options)
 % plot_f_Request = ["Request", "rlocus", " [Sensitivity_F] rlocus"];
 % displayPlot(plot_f_Request, f_Sensitivity_F, plot_f_Options)
 % Tracciamento dei poli nel piano complesso
-% pzplot(f_G_theta_ZPK, f_Sensitivity_F, f_G_e_theta)
+% pzplot(f_G_angle_ZPK, f_Sensitivity_F, f_G_e_angle)
 
 
 % 
 % % STUDIO DELLA STABILITA' ROBUSTA del sistema in retroazione
-% plot_f_Request = ["Request", "blank", " [G_e_theta] bode"];
+% plot_f_Request = ["Request", "blank", " [G_e_angle] bode"];
 % displayPlot(plot_f_Request, 0, plot_f_Options)
-% [mag, phase, wout] = bode(f_G_e_theta);     % Assign the plot data to variables
-% [~, pm, ~, gm] = margin(f_G_e_theta);
+% [mag, phase, wout] = bode(f_G_e_angle);     % Assign the plot data to variables
+% [~, pm, ~, gm] = margin(f_G_e_angle);
 % setoptions = bodeoptions;               % Get the default plot options
 % setoptions.Grid = 'on';                 % Turn on the grid
-% bode(f_G_e_theta, setoptions);              % Plot the Bode plot with custom options
+% bode(f_G_e_angle, setoptions);              % Plot the Bode plot with custom options
 % hold on;
 % % Display phase margin and gain margin on the Bode plot
 % text(0.5, -180+pm, sprintf('Pm = %.2f deg', pm), 'Color', 'red');
@@ -241,7 +259,7 @@ viewGoal(Goals, f_Sensitivity_F);
 
 
 p_k=29
-f_KR_theta = -(s+0.4)*(s+4.5)/s/(s+12);
+f_KR_angle = -(s+0.4)*(s+4.5)/s/(s+12);
 
 
 
@@ -259,18 +277,18 @@ zpk(G_lin_pos);
 %R = (s+4)(s+4.5)/s/(s+8); -> causa di oscillazioni
 
         -(s+0.4)*(s+4.5)
-f_KR_theta = ----------------
+f_KR_angle = ----------------
              s(s+9)
 %}
 
 %Regolatore ANGOLARE
-f_KR_theta = -(s+0.4)*(s+4.5)/s/(s+9);
+f_KR_angle = -(s+0.4)*(s+4.5)/s/(s+9);
 %Gain per entrare nella zona di Re>0
-f_K_theta_Gain = 21;
-f_KR_theta = f_K_theta_Gain * f_KR_theta;
+f_K_angle_Gain = 21;
+f_KR_angle = f_K_angle_Gain * f_KR_angle;
 %Sistema esteso
-f_G_e_theta = minreal(G_lin_ang*f_KR_theta);
-rlocus(f_G_e_theta);
+f_G_e_angle = minreal(G_lin_angle*f_KR_angle);
+rlocus(f_G_e_angle);
 grid on;
 
 
@@ -280,7 +298,7 @@ delta_star = 0.52834; % per una sovraelong max di 10
 delta = 0.55;
 Mf = delta*100;
 
-[M_a,P,W]=bode(f_G_e_theta);
+[M_a,P,W]=bode(f_G_e_angle);
 [V,i]=min(abs(W-100));
 GeWcd=M_a(i);
 ArgGeWcd=P(i);
@@ -297,7 +315,7 @@ alpha=(cos(Pd)-1/Md)/(100*sin(Pd))/tau;
 
 R_ant = (1+tau*s)/(1+alpha*tau*s);
 
-R = minreal(f_KR_theta*R_ant);
+R = minreal(f_KR_angle*R_ant);
 %% Controllore in the space state sistem
 
 R_lti   = ss(R);
@@ -308,15 +326,13 @@ C_ctrl  = R_lti.C;
 D_ctrl  = R_lti.D;
 
 %% Sentitivity functions 
-f_L_theta = minreal(G_lin_ang*R);
+f_L_angle = minreal(G_lin_angle*R);
 
-f_Sensitivity_S = minreal(1/(1+f_L_theta));
-f_Sensitivity_F = minreal(f_L_theta/(1+f_L_theta));
-f_Sensitivity_Q = minreal(f_KR_theta/(1+f_L_theta));
+f_Sensitivity_S = minreal(1/(1+f_L_angle));
+f_Sensitivity_F = minreal(f_L_angle/(1+f_L_angle));
+f_Sensitivity_Q = minreal(f_KR_angle/(1+f_L_angle));
 
 %Tempo di assestamento massimo (entro il 5%) = 1.2s
-
-
 % checking the requirements
 % mindecay   = 2.5;
 % mindamping = 0;
@@ -328,21 +344,14 @@ f_Sensitivity_Q = minreal(f_KR_theta/(1+f_L_theta));
 
 %%
 %{
-
-
-
 [k_d, k_p, k_d] = coef_pid(1,2,3)
 
 R_pid_s = (k_p*s + k_d*s + k_i)/s; %Equazione PID
 G_s = ()
-
-
 G_cl_s = (R_pid_s * G_s) / (1 + (R_pid_s * G_s))
 
-
 % devo scegliere i 3 poli in anello chiusp
-
- INPULSE(G_LIN_ANG)
+INPULSE(G_LIN_ANG)
 MINREAL
 %}
 

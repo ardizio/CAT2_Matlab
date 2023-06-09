@@ -1,3 +1,18 @@
+% % check: FISICA REALIZZABILITA'
+% [f_G_angle_orderNum, f_G_angle_orderDen] = getFunctionOrdersNumDen(f_G_angle);
+% % Display the orders
+% if f_G_angle_orderNum <= f_G_angle_orderDen
+%     disp('f_G_angle è FISICAMENTE REALIZZABILE');
+% end
+% % check: STABILITA'
+% f_G_angle_isStable = isstable(f_G_angle);
+% if f_G_angle_isStable
+%     disp('f_G_angle Stabilità: STABILE');
+% else
+%     disp('f_G_angle Stabilità: INSTABILE');
+% end
+
+
 function [order_num, order_den] = getFunctionOrdersNumDen(G)
 
     % Extract Numeratore coeffs
