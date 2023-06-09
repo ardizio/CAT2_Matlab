@@ -234,6 +234,9 @@ B_alpha_1_angle = (1 - alpha_angle) * Ts * (I_angle - alpha_angle * A_CTRL_angle
 B_alpha_2_angle = alpha_angle * Ts * (I_angle - alpha_angle * A_CTRL_angle * Ts)^-1 * B_CTRL_angle;
 
 
+% Z TO ARDUINO TBD
+
+
 %% Controllo della posizione
 
 f_K_position_Gain = 300;
