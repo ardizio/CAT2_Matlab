@@ -4,7 +4,7 @@ clear
 clc
 close all
 %% General settings
-
+plot_enable_Display = 0;
 plot_figure_Index = 1;
 % CHANGE To FIT DEVICE SCREEN
 plot_device_maxColumns  = 3;
@@ -49,6 +49,8 @@ init_x0 = -5;             % to SLX
 init_omega0 = 0;          % to SLX
 init_theta0 = pi/12;      % to SLX
 init_thetaRef = 0;        % to SLX
+init_positionRef = 0;     % to SLX
+Ts = 0.2;           % to SLX
 %% Transfer function variable
 s = tf('s');
 %% Simulink settings
@@ -122,7 +124,7 @@ f_G_position_Poles = pole(f_G_position);
 f_G_position_Zeros = zero(f_G_position);
 % disp(f_G_position_Zeros);
 
-% NOTA: i denominatori di f_G_angle e f_G_position hanno gli stessi zeri,
+% NOTA: denominatori di f_G_angle e f_G_position hanno gli stessi zeri,
 % ma hanno poli differenti al numeratore. 
 % f_G_angle ha un polo nell'origine.
 
@@ -178,13 +180,13 @@ f_G_position_Zeros = zero(f_G_position);
 
 %% Controllo dell'Angolo
 
-%f_K_angle_Gain = 28;
-%f_R_angle = -(s+0.1289)*(s+5.5)/s/(s+12);
+f_K_angle_Gain = 28;
+f_R_angle = -(s+0.1289)*(s+5.5)/s/(s+12);
 
-f_K_angle_Gain = 1000;
-f_R_angle = -(s+1)*(s+3)/s/(s+100);
+% f_K_angle_Gain = 1000;
+% f_R_angle = -(s+1)*(s+3)/s/(s+100);
 
-minreal(zpk(f_R_angle))
+% minreal(zpk(f_R_angle))
 
 f_KR_angle = f_K_angle_Gain * f_R_angle;
 
@@ -203,20 +205,19 @@ f_Sensitivity_Q_angle = minreal(f_KR_angle/(1+f_L_angle));
 % f_T_angle
 f_T_angle = minreal(f_G_angle/(1+f_L_angle));
 
-% Proprietà del sistema stabilizzato
-plot_f_Request = ["Request", "rlocus", " [f_L_angle] rlocus"];
-plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
-pzplot(f_G_angle, f_Sensitivity_F_angle, f_L_angle)
-% MOSTRO
-plot_f_Request = ["Request", "step", " Risposta CLOSED LOOP"];
-plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
-
-plot_f_Request = ["Request", "step", " Risposta Sistema T"];
-plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, f_T_angle, plot_f_Options)
-
+% % Proprietà del sistema stabilizzato
+% plot_f_Request = ["Request", "rlocusplot", " [f_L_angle] rlocus"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
+% pzplot(f_G_angle, f_Sensitivity_F_angle, f_L_angle)
+% % MOSTRO
+% plot_f_Request = ["Request", "step", " Risposta CLOSED LOOP"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
+% 
+% plot_f_Request = ["Request", "step", " Risposta Sistema T"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_T_angle, plot_f_Options)
 
 f_KR_angle_LTI = ss(f_KR_angle);
 A_CTRL_angle  = f_KR_angle_LTI.A;
@@ -224,24 +225,38 @@ B_CTRL_angle  = f_KR_angle_LTI.B;
 C_CTRL_angle  = f_KR_angle_LTI.C;
 D_CTRL_angle  = f_KR_angle_LTI.D;
 
-
+% algoritmo per la discretizzazione
+alpha_angle = 0.5; % Discretizzazione tramite Tustin
+I_angle     = eye(size(A_CTRL_angle, 1)); % matrice identità
+% matrici del regolatore a tempo discreto
+A_alpha_angle = I_angle + Ts * (I_angle - alpha_angle * A_CTRL_angle * Ts)^-1 * A_CTRL_angle;
+B_alpha_1_angle = (1 - alpha_angle) * Ts * (I_angle - alpha_angle * A_CTRL_angle * Ts)^-1 * B_CTRL_angle;
+B_alpha_2_angle = alpha_angle * Ts * (I_angle - alpha_angle * A_CTRL_angle * Ts)^-1 * B_CTRL_angle;
 
 
 %% Controllo della posizione
 
-
-
 f_K_position_Gain = 300;
 f_R_position = -(s+0.5)*(s+0.5)/s/(s+100);
+
+plot_f_Request = ["Request", "rlocus", " [f_G_position] rlocus"];
+plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+displayPlot(plot_f_Request, f_G_position, plot_f_Options)
 
 minreal(zpk(f_R_position))
 
 f_KR_position = f_K_position_Gain * f_R_position;
 
+
 % Analisi del sistema di controllo progettato 
 
 % Funzione d'Anello
 f_L_position = minreal(f_KR_position * f_G_position);
+
+plot_f_Request = ["Request", "rlocus", " [f_L_position] rlocus"];
+plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+displayPlot(plot_f_Request, f_L_position, plot_f_Options)
+
 
 % Funzione di Sensitività [f_Sensitivity_S_position]
 f_Sensitivity_S_position = minreal(1/(1+f_L_position));
@@ -253,26 +268,26 @@ f_Sensitivity_Q_position = minreal(f_KR_position/(1+f_L_position));
 % f_T_position
 f_T_position = minreal(f_G_position/(1+f_L_position));
 
-% Proprietà del sistema stabilizzato
+% rlocus L(s)
 plot_f_Request = ["Request", "rlocus", " [f_L_angle] rlocus"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 displayPlot(plot_f_Request, f_Sensitivity_F_position, plot_f_Options)
-pzplot(f_G_position, f_Sensitivity_F_position, f_L_position)
-% MOSTRO
+% pzplot(f_G_position, f_Sensitivity_F_position, f_L_position)
+% Risposta CLOSED LOOP F(s)
 plot_f_Request = ["Request", "step", " Risposta CLOSED LOOP [f_Sensitivity_F_position]"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 displayPlot(plot_f_Request, f_Sensitivity_F_position, plot_f_Options)
-
+% Risposta a; gradino T(s)
 plot_f_Request = ["Request", "step", " Risposta Sistema [f_T_position]"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 displayPlot(plot_f_Request, f_T_position, plot_f_Options)
 
 
 f_KR_position_LTI = ss(f_KR_position);
-A_CTRl_position = f_KR_position_LTI.A;
-B_CTRl_position = f_KR_position_LTI.B;
-C_CTRl_position = f_KR_position_LTI.C;
-D_CTRl_position = f_KR_position_LTI.D;
+A_CTRL_position = f_KR_position_LTI.A;
+B_CTRL_position = f_KR_position_LTI.B;
+C_CTRL_position = f_KR_position_LTI.C;
+D_CTRL_position = f_KR_position_LTI.D;
 
 
 
@@ -311,7 +326,7 @@ end
 % plot_f_Request = ["Request", "step", " [Sensitivity_F] risposta al gradino"];
 % displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
 
-% plot_f_Request = ["Request", "rlocus", " [Sensitivity_F] rlocus"];
+% plot_f_Request = ["Request", "rlocusplot", " [Sensitivity_F] rlocus"];
 % displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
 % Tracciamento dei poli nel piano complesso
 % pzplot(f_G_angle_ZPK, f_Sensitivity_F_angle, f_G_e_angle)
