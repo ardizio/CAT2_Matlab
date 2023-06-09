@@ -86,52 +86,67 @@ LTI_angle_lin = ss(Matrix_A_lin, Matrix_B_lin, Matrix_C_angle_lin, Matrix_D_angl
 LTI_position_lin = ss(Matrix_A_lin, Matrix_B_lin, Matrix_C_pos_lin, Matrix_D_pos_lin);
 
 
+%% ANALISI IN CATENA APERTA
+%% Extract data from Tranfer Function
 
-%% EXTRACT DATA FROM Tranfer Function
+%                     zeri (Z)
+% FdT = guadagno (K) ----------
+%                     poli (P)
 
+% POLI e ZERI - angolare
 % f_G_angle: FUNZIONE DI TRASFERIMENTO angolare 
 f_G_angle = tf(LTI_angle_lin);
 f_G_angle = minreal(zpk(f_G_angle))
 % Posizione Poli
-fprintf('\n f_G_angle POLI:');
+% fprintf('\n f_G_angle POLI:');
 f_G_angle_Poles = pole(f_G_angle);
 disp(f_G_angle_Poles);
 % Posizione Zeri
-fprintf('\n f_G_angle ZERI :');
+% fprintf('\n f_G_angle ZERI :');
 f_G_angle_Zeros = zero(f_G_angle);
 disp(f_G_angle_Zeros);
 
+% POLI e ZERI - posizionale
 % f_G_position: FUNZIONE DI TRASFERIMENTO posizionale
 f_G_position = tf(LTI_position_lin);
-f_G_position = minreal(zpk(f_G_position))
+f_G_position = minreal(zpk(f_G_position));
 % Posizione Poli
-fprintf('\n f_G_angle POLI:');
+% fprintf('\n f_G_angle POLI:');
 f_G_position_Poles = pole(f_G_position);
-disp(f_G_position_Poles);
+% disp(f_G_position_Poles);
 % Posizione Zeri
-fprintf('\n f_G_angle ZERI :');
+% fprintf('\n f_G_angle ZERI :');
 f_G_position_Zeros = zero(f_G_position);
-disp(f_G_position_Zeros);
+% disp(f_G_position_Zeros);
 
 % Notiamo che il denominatore di f_G_angle e f_G_position ha gli stessi
 % zeri. Ma ho poli differenti. f_G_angle ha un polo nell'origine.
 
-%% Analisi RISPOSTE all impulso e al gradino
-% %  f_G_angle
-% plot_f_Request = ["Request", "impulse", " [f_G_angle] Risposta impulso"];
-% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_G_angle, plot_f_Options)
-% plot_f_Request = ["Request", "stepplot", " [f_G_angle] Risposta gradino"];
-% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_G_angle, plot_f_Options)
-% % f_G_position 
-% plot_f_Request = ["Request", "impulse", " [f_G_position] Risposta impulso"];
-% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_G_position, plot_f_Options)
-% plot_f_Request = ["Request", "stepplot", " [f_G_position] Risposta gradino"];
-% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_G_position, plot_f_Options)
+%% Analisi Risposte all impulso e al gradino
+%  f_G_angle
+plot_f_Request = ["Request", "impulse", " [f_G_angle] Risposta impulso"];
+plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+displayPlot(plot_f_Request, f_G_angle, plot_f_Options)
+plot_f_Request = ["Request", "stepplot", " [f_G_angle] Risposta gradino"];
+plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+displayPlot(plot_f_Request, f_G_angle, plot_f_Options)
+% f_G_angle è instabile sia al gradino, sia all'impulso.
 
+% f_G_position 
+plot_f_Request = ["Request", "impulse", " [f_G_position] Risposta impulso"];
+plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+displayPlot(plot_f_Request, f_G_position, plot_f_Options)
+plot_f_Request = ["Request", "stepplot", " [f_G_position] Risposta gradino"];
+plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+displayPlot(plot_f_Request, f_G_position, plot_f_Options)
+% f_G_angle è insoddisfacente sia al gradino, sia all'impulso.
+
+% E' necessario lo sviluppo di un controllore che per prima cosa stabilizzi
+% il sistema poi migliori le prestazioni
+
+
+
+%% PROGETTO DEL CONTROLLORE
 %% Obiettivi di controllo
 % Tempo di Assestamento: T_a5 <= 1.2 secondi
 % Fare in modo che il sistema sia in grado di annullare un disturbo d(t) in
@@ -146,9 +161,24 @@ disp(f_G_position_Zeros);
 % CLOSED LOOP [C_ang] per poi progettare un secondo controllore [C_pos]
 % inserito in catena diretta al nuovo sitema
 
-%% CONTROLLO dell'Angolo
+%% Controllo dell'Angolo
+
+f_K_angle_Gain = 1;
+f_KG_angle = minreal(f_K_angle_Gain * f_G_angle);
+
+plot_f_Request = ["Request", "rlocus", " [f_KG_angle OPEN LOOP] Luogo delle radici"];
+plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+displayPlot(plot_f_Request, f_KG_angle, plot_f_Options)
+% Luogo delle radici negativo, non basta aggiungere un k proporzionale, non
+% stabilizza il sistema. E' necessario eliminare lo zero nell'originee
+% richiamare il reamo che parte dal semipiano positivo.
+
+% Introduzione dell'azione integrale (I)
+% Cancello uno zero nell'origine di f_KG_angle
 
 
+
+%{
 %% Bode over f_G_angle
 % CERCO IL GUADAGNO STABILIZZANTE
 % Seems Good
@@ -169,11 +199,10 @@ plot_f_Request = ["Request", "rlocus", " [G_e_angle CLOSED LOOP] Luogo delle rad
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 displayPlot(plot_f_Request, f_G_e_angle, plot_f_Options)
 
-%{
 plot_f_Request = ["Request", "step", " [f_G_e_angle] Step response"];
 displayPlot(plot_f_Request, f_G_e_angle, plot_f_Options)
 %}
-%% Analisi del sistema di controllo progettato 
+% Analisi del sistema di controllo progettato 
 
 % Funzione d'Anello
 f_L_angle = minreal(f_G_angle * f_KR_angle);
@@ -185,7 +214,7 @@ f_Sensitivity_F = minreal(f_L_angle/(1+f_L_angle));
 % Funzione di Sensitività del controllo [f_Sensitivity_Q]
 f_Sensitivity_Q = minreal(f_KR_angle/(1+f_L_angle));
 
-%% Proprietà del sistema stabilizzato
+% Proprietà del sistema stabilizzato
 % MOSTRO: diagramma di Bode di f_G_e_angle + display margin f_L_angle
 plot_f_Request = ["Request", "margin", " Bode di f_G_e_angle + display margin f_L_angle"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
@@ -203,9 +232,9 @@ displayPlot(plot_f_Request, f_L_angle, plot_f_Options)
 
 
 %% Analisi del sistema di controllo progettato
-
-plot_f_Request = ["Request", "step", " [Sensitivity_F] risposta al gradino"];
-displayPlot(plot_f_Request, f_Sensitivity_F, plot_f_Options)
+% 
+% plot_f_Request = ["Request", "step", " [Sensitivity_F] risposta al gradino"];
+% displayPlot(plot_f_Request, f_Sensitivity_F, plot_f_Options)
 
 % plot_f_Request = ["Request", "rlocus", " [Sensitivity_F] rlocus"];
 % displayPlot(plot_f_Request, f_Sensitivity_F, plot_f_Options)
