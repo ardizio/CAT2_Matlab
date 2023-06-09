@@ -236,7 +236,7 @@ B_alpha_2_angle = alpha_angle * Ts * (I_angle - alpha_angle * A_CTRL_angle * Ts)
 
 % Z TO ARDUINO TBD
 % Continuos to Discrete
-R1 = c2d(f_KR_angle, Ts) %this is a short display, go to var panel and extract more decimals
+R1 = c2d(f_KR_angle, Ts)  %this is a short display, go to var panel and extract more decimals
 % TBD automate functon generation to allow easy paste to arduino
 
 %% Controllo della posizione
