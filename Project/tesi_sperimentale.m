@@ -4,7 +4,7 @@ clear
 clc
 close all
 %% General settings
-plot_enable_Display = 0;
+plot_enable_Display = 1;
 plot_figure_Index = 1;
 % CHANGE To FIT DEVICE SCREEN
 plot_device_maxColumns  = 3;
@@ -50,7 +50,7 @@ init_omega0 = 0;          % to SLX
 init_theta0 = pi/12;      % to SLX
 init_thetaRef = 0;        % to SLX
 init_positionRef = 0;     % to SLX
-Ts = 0.2;           % to SLX
+Ts = 0.002;               % to SLX
 %% Transfer function variable
 s = tf('s');
 %% Simulink settings
@@ -180,11 +180,11 @@ f_G_position_Zeros = zero(f_G_position);
 
 %% Controllo dell'Angolo
 
-f_K_angle_Gain = 28;
-f_R_angle = -(s+0.1289)*(s+5.5)/s/(s+12);
+% f_K_angle_Gain = 28;
+% f_R_angle = -(s+0.1289)*(s+5.5)/s/(s+12);
 
-% f_K_angle_Gain = 1000;
-% f_R_angle = -(s+1)*(s+3)/s/(s+100);
+f_K_angle_Gain = 1000;
+f_R_angle = -(s+1)*(s+3)/s/(s+100);
 
 % minreal(zpk(f_R_angle))
 
