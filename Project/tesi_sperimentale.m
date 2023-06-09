@@ -4,7 +4,7 @@ clear
 clc
 close all
 %% General settings
-plot_enable_Display = 1;
+plot_enable_Display = 0;      % lascia 1 per abilitare plot -> else disable
 plot_figure_Index = 1;
 % CHANGE To FIT DEVICE SCREEN
 plot_device_maxColumns  = 3;
@@ -114,7 +114,7 @@ f_G_angle_Zeros = zero(f_G_angle);
 % posizionale - POLI e ZERI
 % f_G_position: FUNZIONE DI TRASFERIMENTO posizionale
 f_G_position = tf(LTI_position_lin);
-f_G_position = minreal(zpk(f_G_position))
+f_G_position = minreal(zpk(f_G_position));
 % Posizione Poli
 % fprintf('\n f_G_angle POLI:');
 f_G_position_Poles = pole(f_G_position);
@@ -235,7 +235,9 @@ B_alpha_2_angle = alpha_angle * Ts * (I_angle - alpha_angle * A_CTRL_angle * Ts)
 
 
 % Z TO ARDUINO TBD
-
+% Continuos to Discrete
+R1 = c2d(f_KR_angle, Ts) %this is a short display, go to var panel and extract more decimals
+% TBD automate functon generation to allow easy paste to arduino
 
 %% Controllo della posizione
 
@@ -246,7 +248,7 @@ plot_f_Request = ["Request", "rlocus", " [f_G_position] rlocus"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 displayPlot(plot_f_Request, f_G_position, plot_f_Options)
 
-minreal(zpk(f_R_position))
+minreal(zpk(f_R_position));
 
 f_KR_position = f_K_position_Gain * f_R_position;
 
