@@ -45,6 +45,10 @@ function displayPlot(Request, Input, Options)
            rlocusplot(Input);
        elseif Request(2) == "step"
            step(Input);
+       elseif Request(2) == "stepplot"
+           stepplot(Input);
+       elseif Request(2) == "impulse"
+           impulse(Input);
        elseif Request(2) == "margin"
            margin(Input);
        elseif Request(2) == "bode"
