@@ -58,7 +58,7 @@ char read_Serial2;
 uint8_t id_BufferRX = 0;
 int value_BufferRX = 0;
 
-float ang_error = 0.0, last_ang_error = 0.0;
+float ang_error = 0.0, last_ang_error = 0.0;   //TBD
 float pose_error = 0.0, last_pose_error = 0.0;
 long ctrlAccel = 0, speedControl = 0;
 double intAngle = 0.0, previousAngle_fromEncoder = 0.0, cart_Position = 0.0;
@@ -321,10 +321,8 @@ void loop(){
   Serial3.println(display_speedControl);
   Serial.print(ang_rad_1);
   Serial.print(" - ");
-  
   Serial.print(u[0]);
   Serial.print(" - ");
-
   Serial.println(motorSpeed);
 
   // Set Delay?

@@ -32,17 +32,19 @@
 #define SWITCH_BLACK A3  // Switch Black  [analog3]
 #define SWITCH_WHITE A1  // Switch White  [analog1]
 #define VCC_PIN 31       // Power supply
-#define AnalogThreshold 600          // GIVEN D?
+#define AnalogThreshold 600   // GIVEN Threshold
 
 #define CONST 0.0208     // per la conversione da angoli in cm
 #define OFFSET_ANGLE 10  // da 0 a 4096 come da  0° a 360°  // da ricalibrare // forse di 0.6° [15]
-#define SAMPLE_TIME 2    //milliseconds
+#define SAMPLE_TIME 2    //milliseconds GIVEN tempo di campionamento
 
 // CONTROL VARIABLES
-#define MAX_ERROR 30      // GIVEN D?
-#define MIN_ERROR 3       // GIVEN D?
+#define MAX_ERROR 30      // GIVEN D? TBD
+#define MIN_ERROR 3       // GIVEN D? TBD
 #define REF_ANGLE 180     //
-#define INIT_POSE 70      // GIVEN
+#define INIT_POSE 70      // GIVEN 70cm from start
+#define REF_POSE 70       // added by me
+
 
 // Casistiche possibili
 // MACHINE STATES
@@ -61,8 +63,8 @@ char display_speedControl[16];
  
 
 int16_t encodedAngle_1 = 0, encodedAngle_2 = 0;      // 2 angoli
-uint32_t msTime_Current = 0, msTime_Past = 0;                          // 2 tempi
-double deltaTime = 0;                                   // differenza di tempo
+uint32_t msTime_Current = 0, msTime_Past = 0;        // 2 tempi
+double deltaTime = 0;                                // differenza di tempo
 double Angle1_Pendulum_minus_Offset = 0.0, Angle2_Pendulum = 0.0, newAngle3_fromEncoder = 0.0;  // 3 angoli
 
 
@@ -73,10 +75,10 @@ int value_BufferRX = 0;        // atoi BufferRx[id]
 
 
 
-//TBD
-double ang_error = 0.0;
-double pose_error = 0.0;
-long speedControl = 0;
+
+double ang_error = 0.0;    //TBD
+double pose_error = 0.0;   //TBD
+long speedControl = 0;     //TBD
 double intAngle = 0.0, previousAngle_fromEncoder = 0.0, cart_Position = 0.0;
 bool isActive_Switch_White = false, isActive_Switch_Black = false;
 
@@ -86,11 +88,12 @@ machineState state = INIT;     // INITIAL STATE
 
 /////////////////////////////
 // REGULATOR VECTORS DEFINITION///////
-double u_ctrl = [0.0, 0.0, 0.0];		// Regulator error control input
-double e_ctrl = [0.0, 0.0, 0.0];		// Regulator error vector 
-double u = 0.0;					// Control input
+double u[6] = {0.0};		// Regulator error control input
+double e[6] = {0.0};		// Regulator error vector 
+//double u = 0.0;				// Control input
 
-double motorSpeed = 0.0;  // MOTOR SPEED
+double motorSpeed = 0.0;// MOTOR SPEED
+double ang_radiants = 0;
 
 //////////////////////////////
 
@@ -120,6 +123,7 @@ void loop() {
   int value_Switch_Black = analogRead(SWITCH_BLACK);
   int value_Switch_White = analogRead(SWITCH_WHITE);
 
+
   // [ 1 ]
   //Controllo che i valori degli switch rientrino all'inteno del limite imposto AnalogThreshold
   if (value_Switch_Black > AnalogThreshold){
@@ -137,8 +141,9 @@ void loop() {
   }
 
 
+
   // [ 2 ]
-  // READ CART POSITION from Encoder SPI
+  // READ CART POSITION and ANGLE from Encoder SPI
   if (state != 0) {
     uint8_t attempts = 0;
 
@@ -163,6 +168,8 @@ void loop() {
     cart_Position = (intAngle + newAngle3_fromEncoder) * CONST;  //Trasformo gradi in  cm
     //would like top print
   }
+  //for nextRun: previousAngle_fromEncoder
+  //for thisRun: cart_Position && intAngle
 
 
 
@@ -184,31 +191,31 @@ void loop() {
       id_BufferRX = id_BufferRX & 0x07;                  // SET check if (id_BufferRX reached 7 [0-7]) : bool
     }
   }
-
   //Diff
   if (value_BufferRX > 5000) {                           // se value_BufferRX > 5000
     encodedAngle_2 = value_BufferRX - 0x4000;            // encodedAngle_2 = value_BufferRX - 16384(as hex)
     Angle2_Pendulum = encodedAngle_2 / 4096.0 * 360.0;
-    //MEH, Where should i Use?
   }
+  //MEH, Where should i Use?
   else {
     encodedAngle_1 = value_BufferRX - OFFSET_ANGLE;     //errore angolo SECONDO ME
     Angle1_Pendulum_minus_Offset = (encodedAngle_1 / 4096.0) * 360.0;
-    //The most USEFUL
   }
+  //The most USEFUL
+
 
 
   // [ 4 ]
   // TIME HANDLING
-  msTime_Current = micros();                            //GET microseconds since Boot
+  msTime_Current = micros();                   //GET microseconds since Boot
   deltaTime = (msTime_Current - msTime_Past) / 1000000.0;
   msTime_Past = msTime_Current;
   
   
+
   // [ 5 ]
   // TIME HANDLING
   switch (state) {
-
 
     // Go Toward BLACK Switch
     case INIT:{  
@@ -221,6 +228,7 @@ void loop() {
       break;
     }
 
+
     // Reset Encoder & Cart Position
     case RESET:{  
       Serial.println("Reset State");
@@ -230,6 +238,7 @@ void loop() {
       state = REACH_POSE_BLACK;               // NEXT phase: .REACH_POSE_BLACK
       break;
     }
+
 
     //To Reach initial Position
     case REACH_POSE_BLACK:{
@@ -246,24 +255,22 @@ void loop() {
     //To Reach initial Position
     case REACH_POSE_WHITE: {
       Serial.println("Reaching InitialPosition from White");
-      speedControl = 2500;                    // SET speedControl at 2500
-      if (cart_Position < INIT_POSE) {        // if cart < "INIT_POSE"
-        speedControl = 0;                     // RESET speedControl at 0 [don't push] ho sorpassato, credo
-        state = WAIT;                         // NEXT phase: .WAIT
-      }                                       // else NEXT phase still: .REACH_POSE_WHITE
+      speedControl = 2500;                     // SET speedControl at 2500
+      if (cart_Position < INIT_POSE) {         // if cart < "INIT_POSE"
+        speedControl = 0;                      // RESET speedControl at 0 [don't push] ho sorpassato, credo
+        state = WAIT;                          // NEXT phase: .WAIT
+      }                                        // else NEXT phase still: .REACH_POSE_WHITE
       break;
     }
      
+
     //Waiting to reach the upside position IDLE
     case WAIT: {
       Serial.println("WAITING");
-      speedControl = 0;                       // RESET speedControl at 0
-
+      // RESET speedControl at 0
+      speedControl = 0;
       //trovare l'errore
-      ang_error = REF_ANGLE - Angle1_Pendulum_minus_Offset
-
-      e_ctrl = [0, 0, 0];
-      u_ctrl = [0, 0, 0];
+      ang_error = REF_ANGLE - Angle1_Pendulum_minus_Offset; 
       
       
       if (abs(ang_error) < MIN_ERROR){
@@ -273,24 +280,44 @@ void loop() {
       motorSpeed = 0;                         // RESET motorSpeed at 0
 
       //INIT e[], u[] at zero
+      u[6] = {0.0};		
+      e[6] = {0.0};
 
       break;
     }
       
+
     // Regulator Control State
     case CTRL:{
      
       //trovare l'errore
       ang_error = REF_ANGLE - Angle1_Pendulum_minus_Offset
-
+      // converto l'angolo da gradi a radianti
       ang_radiants = ang_error * 3,14 / 180
-      //TBD IMPLEMENT YOUR CONTROLLER HERE
-      /*
-      anfolo_errore = riferimento - angolo_del_pendolo
-      trasformo l'angolo in radianti
+
+
+      //e[4]=e[3];
+      //e[3]=e[2];
+      e[2]=e[1];
+      e[1]=e[0];
+      e[0]=-ang_radiants;
       
-      u from here goes in motorSpeed
+      //u[4]=u[3];
+      //u[3]=u[2];
+      u[2]=u[1];
+      u[1]=u[0];
+      //TBD IMPLEMENT YOUR CONTROLLER HERE
+     
+
+      /*
+      if (u[0]>20.0){
+        u[0]=20.0;
+      }
+      if (u[0]<-20.0){
+        u[0]=-20.0;
+      }
       */
+
 
       //Speed settings
       motorSpeed += u / 0.7 * (SAMPLE_TIME / 1000.0);  // FORCE/VELOCITY conversion
@@ -342,10 +369,14 @@ void loop() {
 
   
   //PRINT DATA
-
+  Serial.print(ang_radiants);
+  Serial.print(" - ");
+  Serial.print(u[0]);
+  Serial.print(" - ");
+  Serial.println(motorSpeed);
 
   //Delay
-  delay(SAMPLE_TIME);  // 2ms, tempo imposto per la discretizzazione del controllo
+  delay(SAMPLE_TIME);  // 2millis, tempo imposto per la discretizzazione del controllo
 }
 
 

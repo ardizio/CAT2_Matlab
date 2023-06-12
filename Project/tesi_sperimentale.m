@@ -1,10 +1,10 @@
 %% Clear Setting
-
 clear 
 clc
 close all
+
 %% General settings
-plot_enable_Display = 0;      % lascia 1 per abilitare plot -> else disable
+plot_enable_Display = 1;      % lascia 1 per abilitare plot -> else disable
 plot_figure_Index = 1;
 % CHANGE To FIT DEVICE SCREEN
 plot_device_maxColumns  = 3;
@@ -33,7 +33,6 @@ plot_position_from_bottom = plot_screen_Height;
 %          Sfruttare il controllo in cascata
 
 %% Parametri del carrello su pendolo inverso [p_xxx stands as parameter_xxxx]
-
 p_M = 0.61;          % massa del carrello [kg]
 p_ma = 0.116;        % massa asta [kg]
 p_mb = 0.05;         % massa posta al termine dell'asta [kg]
@@ -51,14 +50,16 @@ init_theta0 = pi/12;      % to SLX
 init_thetaRef = 0;        % to SLX
 init_positionRef = 0;     % to SLX
 Ts = 0.002;               % to SLX
+
 %% Transfer function variable
 s = tf('s');
+
 %% Simulink settings
 MaxStep  = 1e-2;    % solver max step size
 RelTol   = 1e-2;    % solver relative tolerance
-simulation_T_f= 10; % final simulation time
-%% Linearizated model
+simulation_T_f= 30; % final simulation time
 
+%% Linearizated model
 % states: x_1: linear position
 %         x_2: angular position
 %         x_3: linear speed
@@ -135,7 +136,6 @@ f_G_position_Zeros = zero(f_G_position);
 
 %% Analisi Risposte all impulso e al gradino
 
-
 % %  f_G_angle
 % plot_f_Request = ["Request", "impulse", " [f_G_angle] Risposta impulso"];
 % plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
@@ -151,12 +151,10 @@ f_G_position_Zeros = zero(f_G_position);
 % plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
 % displayPlot(plot_f_Request, f_G_position, plot_f_Options)
 
-% % NOTA: f_G_angle è instabile sia al gradino, sia all'impulso.
+% NOTA: f_G_angle è instabile sia al gradino, sia all'impulso.
 % NOTA: f_G_position è insoddisfacente sia al gradino, sia all'impulso.
 % NOTA: è necessario lo sviluppo di un controllore che per prima cosa 
 % stabilizzi il sistema poi migliori le prestazioni.
-
-
 
 %% PROGETTO DEL CONTROLLORE
 
@@ -184,7 +182,8 @@ f_G_position_Zeros = zero(f_G_position);
 % f_R_angle = -(s+0.1289)*(s+5.5)/s/(s+12);
 
 f_K_angle_Gain = 1000;
-f_R_angle = -(s+1)*(s+3)/s/(s+100);
+f_R_angle = -(s+1)*(s+3.8)/s/(s+100);
+% f_R_angle = -(s+1)*(s+3)/s/(s+100);
 
 % minreal(zpk(f_R_angle))
 
@@ -208,8 +207,8 @@ f_T_angle = minreal(f_G_angle/(1+f_L_angle));
 % % Proprietà del sistema stabilizzato
 % plot_f_Request = ["Request", "rlocusplot", " [f_L_angle] rlocus"];
 % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
-% pzplot(f_G_angle, f_Sensitivity_F_angle, f_L_angle)
+% displayPlot(plot_f_Request, f_L_angle, plot_f_Options)
+% % pzplot(f_G_angle, f_Sensitivity_F_angle, f_L_angle)
 % % MOSTRO
 % plot_f_Request = ["Request", "step", " Risposta CLOSED LOOP"];
 % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
@@ -236,19 +235,60 @@ B_alpha_2_angle = alpha_angle * Ts * (I_angle - alpha_angle * A_CTRL_angle * Ts)
 
 % Z TO ARDUINO TBD
 % Continuos to Discrete
-R1 = c2d(f_KR_angle, Ts)  %this is a short display, go to var panel and extract more decimals
-% TBD automate functon generation to allow easy paste to arduino
+R1 = c2d(f_KR_angle, Ts);  %this is a short display, go to var panel and extract more decimals
 
-%% Controllo della posizione
 
-f_K_position_Gain = 300;
-f_R_position = -(s+0.5)*(s+0.5)/s/(s+100);
+% Automated function to arduino
+% set 1 to display output and copy, 0 to block
+returnArduinoCode(R1.Numerator, R1.Denominator, 1)
 
-plot_f_Request = ["Request", "rlocus", " [f_G_position] rlocus"];
+%% Controllo della posizione   
+
+f_G_XTheta = minreal((f_G_position)/(1+(f_L_angle)));
+
+% plot_f_Request = ["Request", "rlocus", " [f_G_XTheta] rlocus"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_G_XTheta, plot_f_Options)
+
+% E' presente un ramo nella parte Re > 0, per ogni gain > 0
+% Sono presenti tre poli, uno nell'origine e due tra -1.4 e 3
+% Ma nessun ramo che si crea porta all'instabilità
+
+
+% il luogo delle radici positivo è complesso, provo il luogo negativo.
+
+plot_f_Request = ["Request", "rlocus", " [f_G_XTheta] rlocus"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, f_G_position, plot_f_Options)
+displayPlot(plot_f_Request, -f_G_XTheta, plot_f_Options)
 
-minreal(zpk(f_R_position));
+% Anche il luogo inverso è instabile, a causa dei rami mossi verso in Re>0
+
+% Notiamo che nel luogo negativo sono presenti asintoti obliqui, 
+% i quali conducono nel semipiano sinistro.
+
+% Quindi cerco di piegare i rami del luogo che formano un anello nel
+% semipiano destro verso quello sinistro, così da rendere il sistema
+% retroazionato stabile per un determinato guadagno k<0.
+
+% Aggiungo uno zero per ridurre il numero di asintoti, e modifico il
+% baricentro degli asintoti.
+
+% n - m = 3 asintoti, allora introduco uno zero tra 0 e 1.356 per ridurre
+% il numero a 2.
+
+% aggiungo uno zero a 1.2, ma non è sufficiente a stabilizzare il sistema
+% in catena chiusa
+% 1.4 to 0.
+
+f_K_position_Gain = 150;
+f_R_position = -(s+0.5)^2/s/(s+100);
+
+% Stabilizzando il sistema con il controllore e alla retroazione negativa
+% si può vedere come la risposta al gradino presenti:
+% - una sotto_elongazione del 5% [dovuta a presenza di uno zero positivo in anello chiuso]
+% - una sovra_elongazione del 25% [dovuta alla presenza di poli complessi coniugati al denominatore]
+% - un tempo di assestamento di 12 secondi
+% - la funzione a regime è quasi ad errore nullo
 
 f_KR_position = f_K_position_Gain * f_R_position;
 
@@ -256,11 +296,12 @@ f_KR_position = f_K_position_Gain * f_R_position;
 % Analisi del sistema di controllo progettato 
 
 % Funzione d'Anello
-f_L_position = minreal(f_KR_position * f_G_position);
+f_L_position = minreal(f_KR_position * f_G_XTheta);
 
 plot_f_Request = ["Request", "rlocus", " [f_L_position] rlocus"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 displayPlot(plot_f_Request, f_L_position, plot_f_Options)
+
 
 
 % Funzione di Sensitività [f_Sensitivity_S_position]
@@ -273,20 +314,22 @@ f_Sensitivity_Q_position = minreal(f_KR_position/(1+f_L_position));
 % f_T_position
 f_T_position = minreal(f_G_position/(1+f_L_position));
 
-% rlocus L(s)
-plot_f_Request = ["Request", "rlocus", " [f_L_angle] rlocus"];
-plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, f_Sensitivity_F_position, plot_f_Options)
-% pzplot(f_G_position, f_Sensitivity_F_position, f_L_position)
+
+% % rlocus L(s)
+% plot_f_Request = ["Request", "rlocus", " [f_L_angle] rlocus"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_Sensitivity_F_position, plot_f_Options)
+% % pzplot(f_G_position, f_Sensitivity_F_position, f_L_position)
+
 % Risposta CLOSED LOOP F(s)
 plot_f_Request = ["Request", "step", " Risposta CLOSED LOOP [f_Sensitivity_F_position]"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 displayPlot(plot_f_Request, f_Sensitivity_F_position, plot_f_Options)
-% Risposta a; gradino T(s)
-plot_f_Request = ["Request", "step", " Risposta Sistema [f_T_position]"];
-plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, f_T_position, plot_f_Options)
 
+% % Risposta a; gradino T(s)
+% plot_f_Request = ["Request", "step", " Risposta Sistema [f_T_position]"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_T_position, plot_f_Options)
 
 f_KR_position_LTI = ss(f_KR_position);
 A_CTRL_position = f_KR_position_LTI.A;
@@ -294,7 +337,23 @@ B_CTRL_position = f_KR_position_LTI.B;
 C_CTRL_position = f_KR_position_LTI.C;
 D_CTRL_position = f_KR_position_LTI.D;
 
+% algoritmo per la discretizzazione
+alpha_position = 0.5; % Discretizzazione tramite Tustin
+I_position  = eye(size(A_CTRL_position, 1)); % matrice identità
+% matrici del regolatore a tempo discreto
+A_alpha_position = I_position + Ts * (I_position - alpha_position * A_CTRL_position * Ts)^-1 * A_CTRL_position;
+B_alpha_1_position = (1 - alpha_position) * Ts * (I_position - alpha_position * A_CTRL_position * Ts)^-1 * B_CTRL_position;
+B_alpha_2_position = alpha_position * Ts * (I_position - alpha_position * A_CTRL_position * Ts)^-1 * B_CTRL_position;
 
+
+% Z TO ARDUINO TBD
+% Continuos to Discrete
+R2 = c2d(f_KR_position, Ts);  %this is a short display, go to var panel and extract more decimals
+
+
+% Automated function to arduino
+% set 1 to display output and copy, 0 to block
+returnArduinoCode(R2.Numerator, R2.Denominator, 1)
 
 %% END Segment
 % Create a figure
@@ -309,56 +368,3 @@ end
 function clear_plots(~, ~)
     close all
 end
-
-
-
-
-%% Analisi del sistema di controllo progettato
-
-
-% % MOSTRO: Margini con Bode di f_L_angle {margin(f_L_angle))}
-% plot_f_Request = ["Request", "margin", " margin di f_L_angle"];
-% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_L_angle, plot_f_Options)
-% % MOSTRO: risposta al gradino di f_G_e_angle
-% plot_f_Request = ["Request", "step", " Risposta al gradino del sistema stabilizzato"];
-% plot_f_Options = ["Grid_on", "Box_off", "tempo [s]", "posizione [rad]", "edit_legend"];
-% displayPlot(plot_f_Request, f_G_e_angle, plot_f_Options)
-% [y, t] = step(f_G_e_angle); % salva in y la risposta e in t il tempo
-
-
-% 
-% plot_f_Request = ["Request", "step", " [Sensitivity_F] risposta al gradino"];
-% displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
-
-% plot_f_Request = ["Request", "rlocusplot", " [Sensitivity_F] rlocus"];
-% displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
-% Tracciamento dei poli nel piano complesso
-% pzplot(f_G_angle_ZPK, f_Sensitivity_F_angle, f_G_e_angle)
-
-
-% 
-% % STUDIO DELLA STABILITA' ROBUSTA del sistema in retroazione
-% plot_f_Request = ["Request", "blank", " [G_e_angle] bode"];
-% displayPlot(plot_f_Request, 0, plot_f_Options)
-% [mag, phase, wout] = bode(f_G_e_angle);     % Assign the plot data to variables
-% [~, pm, ~, gm] = margin(f_G_e_angle);
-% setoptions = bodeoptions;               % Get the default plot options
-% setoptions.Grid = 'on';                 % Turn on the grid
-% bode(f_G_e_angle, setoptions);              % Plot the Bode plot with custom options
-% hold on;
-% % Display phase margin and gain margin on the Bode plot
-% text(0.5, -180+pm, sprintf('Pm = %.2f deg', pm), 'Color', 'red');
-% text(0.5/gm, 0, sprintf('Gm = %.2f dB', 20*log10(gm)), 'Color', 'blue');
-
-% Goals
-%{
-% Requirements
-mindecay   = 1.2;
-mindamping = 0.7;
-maxfreq    = inf;
-Goals      = TuningGoal.Poles(mindecay, mindamping, maxfreq);
-plot_f_Request = ["Request", "blank", " [f_Sensitivity_F_angle] Show Goals"];
-displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
-viewGoal(Goals, f_Sensitivity_F_angle);
-%}

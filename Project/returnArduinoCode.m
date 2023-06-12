@@ -1,9 +1,10 @@
-function returnArduinoCode(Numerator, Denominator, ~)
+function returnArduinoCode(Numerator, Denominator, CopyOption)
 
     % arduinoString_init = "";
     % arduinoString_wait = "";
     % arduinoString_control = "";
-    arduinoString_result = "      u[0]=";
+    arduinoSpaces = "      ";
+    arduinoString_result = "u[0]=";
 
     e_counter = 0;
     u_counter = 1;
@@ -44,6 +45,13 @@ function returnArduinoCode(Numerator, Denominator, ~)
         end
     end
     arduinoString_result = arduinoString_result + ";";
-    fprintf("Copied to clipboard:" + arduinoString_result)
-    clipboard('copy', arduinoString_result);
+
+    fprintf(arduinoString_result)
+    if(CopyOption == 1)
+        fprintf("\nCopied to clipboard\n")
+        arduinoString_result = arduinoSpaces + arduinoString_result;
+        clipboard('copy', arduinoString_result);
+    end
+
+    
 end
