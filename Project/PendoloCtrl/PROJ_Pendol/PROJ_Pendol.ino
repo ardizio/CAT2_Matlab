@@ -65,7 +65,7 @@ char display_speedControl[16];
 int16_t encodedAngle_1 = 0, encodedAngle_2 = 0;      // 2 angoli
 uint32_t msTime_Current = 0, msTime_Past = 0;        // 2 tempi
 double deltaTime = 0;                                // differenza di tempo
-double Angle1_Pendulum_minus_Offset = 0.0, Angle2_Pendulum = 0.0, newAngle3_fromEncoder = 0.0;  // 3 angoli
+double Angle1_pendulumMinusOffset = 0.0, Angle2_Pendulum = 0.0, newAngle3_fromEncoder = 0.0;  // 3 angoli
 
 
 
@@ -88,11 +88,16 @@ machineState state = INIT;     // INITIAL STATE
 
 /////////////////////////////
 // REGULATOR VECTORS DEFINITION///////
-double u[6] = {0.0};		// Regulator error control input
-double e[6] = {0.0};		// Regulator error vector 
-//double u = 0.0;				// Control input
 
-double motorSpeed = 0.0;// MOTOR SPEED
+// POSITION
+double u_position[4] = {0.0};		// Regulator error control input
+double e_position[4] = {0.0};		// Regulator error vector 
+
+// ANGLE
+double u_angle[4] = {0.0};		  // Regulator error control input
+double e_angle[4] = {0.0};		  // Regulator error vector 
+
+double motorSpeed = 0.0;        // MOTOR SPEED
 double ang_radiants = 0;
 
 //////////////////////////////
@@ -177,7 +182,7 @@ void loop() {
   // READ PENDULUM ANGLE from Serial2
   while (Serial2.available()) {                          // Se Serial2 è disponibile
     read_Serial2 = Serial2.read();                       // Read Serial2 Value
-    if (read_Serial2 == 13 || read_Serial2 == 10) {      // Se è 10 o 13 (perchè a noi interessano 13 e 10?)
+    if (read_Serial2 == 13 || read_Serial2 == 10) {      // Se è 10 o 13 (perchè a noi interessano 13, 10?)
       if (id_BufferRX > 0) {
         bufferRX[id_BufferRX] = 0;                       // CLEAR bufferRX[id_BufferRX] 
         value_BufferRX = atoi(bufferRX);                 // SET value_BufferRX as 
@@ -199,7 +204,7 @@ void loop() {
   //MEH, Where should i Use?
   else {
     encodedAngle_1 = value_BufferRX - OFFSET_ANGLE;     //errore angolo SECONDO ME
-    Angle1_Pendulum_minus_Offset = (encodedAngle_1 / 4096.0) * 360.0;
+    Angle1_pendulumMinusOffset = (encodedAngle_1 / 4096.0) * 360.0;
   }
   //The most USEFUL
 
@@ -270,7 +275,7 @@ void loop() {
       // RESET speedControl at 0
       speedControl = 0;
       //trovare l'errore
-      ang_error = REF_ANGLE - Angle1_Pendulum_minus_Offset; 
+      ang_error = REF_ANGLE - Angle1_pendulumMinusOffset; 
       
       
       if (abs(ang_error) < MIN_ERROR){
@@ -279,48 +284,53 @@ void loop() {
       
       motorSpeed = 0;                         // RESET motorSpeed at 0
 
-      //INIT e[], u[] at zero
-      u[6] = {0.0};		
-      e[6] = {0.0};
+      // INIT at zero
+      // Position
+      e_position[4] = {0.0};		
+      u_position[4] = {0.0};
+      // Angle
+      e_angle[4] = {0.0};
+      u_angle[4] = {0.0};
 
       break;
     }
       
-
+    
+    
     // Regulator Control State
     case CTRL:{
      
       //trovare l'errore
-      ang_error = REF_ANGLE - Angle1_Pendulum_minus_Offset
+      ang_error = REF_ANGLE - Angle1_pendulumMinusOffset
       // converto l'angolo da gradi a radianti
       ang_radiants = ang_error * 3,14 / 180
 
 
-      //e[4]=e[3];
-      //e[3]=e[2];
-      e[2]=e[1];
-      e[1]=e[0];
-      e[0]=-ang_radiants;
+      //e_angle[4]=e_angle[3];
+      //e_angle[3]=e_angle[2];
+      e_angle[2]=e_angle[1];
+      e_angle[1]=e_angle[0];
+      e_angle[0]=-ang_radiants;
       
-      //u[4]=u[3];
-      //u[3]=u[2];
-      u[2]=u[1];
-      u[1]=u[0];
+      //u_angle[4]=u_angle[3];
+      //u_angle[3]=u_angle[2];
+      u_angle[2]=u_angle[1];
+      u_angle[1]=u_angle[0];
       //TBD IMPLEMENT YOUR CONTROLLER HERE
      
 
       /*
-      if (u[0]>20.0){
-        u[0]=20.0;
+      if (u_angle[0]>20.0){
+        u_angle[0]=20.0;
       }
-      if (u[0]<-20.0){
-        u[0]=-20.0;
+      if (u_angle[0]<-20.0){
+        u_angle[0]=-20.0;
       }
       */
 
 
       //Speed settings
-      motorSpeed += u / 0.7 * (SAMPLE_TIME / 1000.0);  // FORCE/VELOCITY conversion
+      motorSpeed += u_angle[0] / 0.7 * (SAMPLE_TIME / 1000.0);  // FORCE/VELOCITY conversion
 
       if (motorSpeed > 0.9){
         motorSpeed = 0.9;
@@ -371,7 +381,7 @@ void loop() {
   //PRINT DATA
   Serial.print(ang_radiants);
   Serial.print(" - ");
-  Serial.print(u[0]);
+  Serial.print(u_angle[0]);
   Serial.print(" - ");
   Serial.println(motorSpeed);
 
@@ -450,7 +460,6 @@ uint8_t spiWriteRead(uint8_t sendByte, uint8_t encoder, uint8_t releaseLine) {
 
   return data;
 }
-
 void setCSLine(uint8_t encoder, uint8_t csLine) {
   /*
   * This function sets the State of the SPI line. It isn't necessary but makes the code more readable than having digitalWrite everywhere 
@@ -458,7 +467,6 @@ void setCSLine(uint8_t encoder, uint8_t csLine) {
   */
   digitalWrite(encoder, csLine);
 }
-
 void setZeroSPI(uint8_t encoder) {
     /*
   * The AMT22 bus allows for extended commands. The first byte is 0x00 like a normal position transfer, but the 
@@ -476,7 +484,6 @@ void setZeroSPI(uint8_t encoder) {
   spiWriteRead(AMT22_ZERO, encoder, true);
   delay(250);  //250 second delay to allow the encoder to reset
 }
-
 void resetAMT22(uint8_t encoder) {
 
   /*

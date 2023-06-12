@@ -287,7 +287,7 @@ f_R_position = -(s+0.5)^2/s/(s+100);
 % si può vedere come la risposta al gradino presenti:
 % - una sotto_elongazione del 5% [dovuta a presenza di uno zero positivo in anello chiuso]
 % - una sovra_elongazione del 25% [dovuta alla presenza di poli complessi coniugati al denominatore]
-% - un tempo di assestamento di 12 secondi
+% - un tempo di assestamento di 9 secondi
 % - la funzione a regime è quasi ad errore nullo
 
 f_KR_position = f_K_position_Gain * f_R_position;
