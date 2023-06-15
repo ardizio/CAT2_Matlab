@@ -242,7 +242,10 @@ R1 = c2d(f_KR_angle, Ts);  %this is a short display, go to var panel and extract
 % set 1 to display output and copy, 0 to block
 returnArduinoCode(R1.Numerator, R1.Denominator, 1)
 
-%% Controllo della posizione   
+%% Controllo della posizione  (1) 
+
+
+%% Controllo della posizione  (2)
 
 f_G_XTheta = minreal((f_G_position)/(1+(f_L_angle)));
 
@@ -253,7 +256,6 @@ f_G_XTheta = minreal((f_G_position)/(1+(f_L_angle)));
 % E' presente un ramo nella parte Re > 0, per ogni gain > 0
 % Sono presenti tre poli, uno nell'origine e due tra -1.4 e 3
 % Ma nessun ramo che si crea porta all'instabilità
-
 
 % il luogo delle radici positivo è complesso, provo il luogo negativo.
 
@@ -292,7 +294,6 @@ f_R_position = -(s+0.5)^2/s/(s+100);
 
 f_KR_position = f_K_position_Gain * f_R_position;
 
-
 % Analisi del sistema di controllo progettato 
 
 % Funzione d'Anello
@@ -301,8 +302,6 @@ f_L_position = minreal(f_KR_position * f_G_XTheta);
 plot_f_Request = ["Request", "rlocus", " [f_L_position] rlocus"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 displayPlot(plot_f_Request, f_L_position, plot_f_Options)
-
-
 
 % Funzione di Sensitività [f_Sensitivity_S_position]
 f_Sensitivity_S_position = minreal(1/(1+f_L_position));
