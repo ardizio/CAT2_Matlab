@@ -44,7 +44,7 @@ p_Ja = (1/12)*p_ma*p_l^2;% Inertia p_ma
 p_Jb = 0;            % Inertia p_mb
 % Initial Parameters
 init_v0 = 0;              % to SLX
-init_x0 = -5;             % to SLX
+init_x0 = -3;             % to SLX
 init_omega0 = 0;          % to SLX
 init_theta0 = pi/12;      % to SLX
 init_thetaRef = 0;        % to SLX
@@ -256,12 +256,12 @@ B_alpha_2_angle = alpha_angle * Ts * (I_angle - alpha_angle * A_CTRL_angle * Ts)
 
 % Z TO ARDUINO TBD
 % Continuos to Discrete
-R1 = c2d(f_KR_angle, Ts);  %this is a short display, go to var panel and extract more decimals
+arduino_R1 = c2d(f_KR_angle, Ts);  %this is a short display, go to var panel and extract more decimals
 
 
 % Automated function to arduino
 % set 1 to display output and copy, 0 to block
-returnArduinoCode(R1.Numerator, R1.Denominator, 1)
+returnArduinoCode(arduino_R1.Numerator, arduino_R1.Denominator, "_a" ,1)
 
 
 
@@ -272,7 +272,7 @@ returnArduinoCode(R1.Numerator, R1.Denominator, 1)
 
 %% Controllo della posizione  (1) 
 
-cascade_f_G_XTheta = minreal((f_G_position)/(f_G_angle))
+cascade_f_G_XTheta = minreal((f_G_position)/(f_G_angle));
 
 % plot_f_Request = ["Request", "rlocus", " [cascade_f_G_XTheta] rlocus"];
 % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
@@ -300,6 +300,9 @@ displayPlot(plot_f_Request, -cascade_f_G_XTheta, plot_f_Options)
 
 cascade_f_K_position_Gain = 0.34;
 cascade_f_R_position = (s+0.38)/((s + 1.5) * (s + 3.5));
+
+% cascade_f_K_position_Gain = 0.4;
+% cascade_f_R_position = (s+0.3)/((s + 2) * (s + 3));
 
 cascade_f_KR_position = cascade_f_K_position_Gain * cascade_f_R_position;
 
@@ -347,7 +350,14 @@ cascade_B_alpha_1_position = (1 - cascade_alpha_position) * Ts * (cascade_I_posi
 cascade_B_alpha_2_position = cascade_alpha_position * Ts * (cascade_I_position - cascade_alpha_position * A_CTRL_position * Ts)^-1 * B_CTRL_position;
 
 
+% Z TO ARDUINO TBD
+% Continuos to Discrete
+arduino_R2 = c2d(cascade_f_KR_position, Ts);  %this is a short display, go to var panel and extract more decimals
 
+
+% Automated function to arduino
+% set 1 to display output and copy, 0 to block
+returnArduinoCode(arduino_R2.Numerator, arduino_R2.Denominator, "_p" ,1)
 
 
 

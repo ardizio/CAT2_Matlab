@@ -1,10 +1,11 @@
-function returnArduinoCode(Numerator, Denominator, CopyOption)
+function returnArduinoCode(Numerator, Denominator, StringToBeAdded ,CopyOption)
 
     % arduinoString_init = "";
     % arduinoString_wait = "";
     % arduinoString_control = "";
     arduinoSpaces = "      ";
-    arduinoString_result = "u_angle[0]=";
+
+    arduinoString_result = "u"+StringToBeAdded+"[0]=";
 
     e_counter = 0;
     u_counter = 1;
@@ -27,7 +28,7 @@ function returnArduinoCode(Numerator, Denominator, CopyOption)
              if(invertedArray_Num(i) > 0 && i > 1)
                  needPlus = "+";
              end
-            arduinoString_result = arduinoString_result + needPlus + num2str(invertedArray_Num(i)) + "*u_angle["+num2str(u_counter)+"]";
+            arduinoString_result = arduinoString_result + needPlus + num2str(invertedArray_Num(i)) + "*u"+StringToBeAdded+"["+num2str(u_counter)+"]";
             u_counter = u_counter + 1;
         end
 
@@ -42,7 +43,7 @@ function returnArduinoCode(Numerator, Denominator, CopyOption)
              if(invertedArray_Den(i) > 0)
                  needPlus = "+";
              end
-             arduinoString_result = arduinoString_result + needPlus + num2str(invertedArray_Den(i)) + "*e_angle["+num2str(e_counter)+"]";
+             arduinoString_result = arduinoString_result + needPlus + num2str(invertedArray_Den(i)) + "*e"+StringToBeAdded+"["+num2str(e_counter)+"]";
              e_counter = e_counter + 1;
         end
     end
@@ -50,7 +51,7 @@ function returnArduinoCode(Numerator, Denominator, CopyOption)
 
     fprintf(arduinoString_result)
     if(CopyOption == 1)
-        fprintf("\nCopied to clipboard\n")
+        fprintf("\n")
         arduinoString_result = arduinoSpaces + arduinoString_result;
         clipboard('copy', arduinoString_result);
     end
