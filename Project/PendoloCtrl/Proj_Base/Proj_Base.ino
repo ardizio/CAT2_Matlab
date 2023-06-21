@@ -71,14 +71,20 @@ machineState state = INIT;  // INITIAL STATE
 // REGULATOR VECTORS DEFINITION///////
 double u = 0.0;          // Control input
 
+
 //
 //aggiungere variabili di stato
 //
 
-
-
-
 double v = 0.0;  // MOTOR SPEED
+
+
+// ANGLE
+double e_angle[] = {0, 0, 0, 0, 0};     // Regulator error control input
+double u_angle[] = {0, 0, 0, 0, 0};		  // Regulator error vector 
+
+double v = 0;
+double ang_rad_1 = 0;
 
 //////////////////////////////
 
@@ -159,7 +165,7 @@ void loop() {
     encAngle_1 = readVal - OFFSET_ANGLE;
     ang_1 = (encAngle_1 / 4096.0) * 360.0;
   }
-  ang_error = 180 - ang_1;
+  //ang_error = 180 - ang_1;
   /***************************************************/
 
   /****************** Time Handling ******************/
@@ -171,7 +177,7 @@ void loop() {
   /****************** State Machine ******************/
   switch (state) {
     case INIT:  // Go Toward BLACK Switch
-      Serial.println("Homing");
+      Serial.println("Init: Homing");
       ctrlSpeed = 2500;
       if (sw_b_on) {
         ctrlSpeed = 0;
@@ -209,14 +215,22 @@ void loop() {
     case WAIT:  //Waiting to reach the upside position
       Serial.println("WAITING");
       ctrlSpeed = 0;
-      v = 0;
-
-
-      if (abs(ang_error) < MIN_ERROR) {
+      ang_error = REF_ANGLE - ang_1;
+      if(abs(ang_error) < MIN_ERROR){
         state = CTRL;
-        u = 0;
-        //inizializzazione degli stati
       }
+      v=0;
+      e[4] = 0;
+      e[3] = 0;
+      e[2] = 0;
+      e[1] = 0;
+      e[0] = 0;
+
+      u[4] = 0;
+      u[3] = 0;
+      u[2] = 0;
+      u[1] = 0;
+      u[0] = 0;
       break;
 
     case CTRL:  // Regulator Control state
@@ -226,6 +240,17 @@ void loop() {
       //Inserire il regolatore
       //
       //
+      e[4]=e[3];
+      e[3]=e[2];
+      e[2]=e[1];
+      e[1]=e[0];
+      e[0]=-ang_rad_1;
+      u[4]=u[3];
+      u[3]=u[2];
+      u[2]=u[1];
+      u[1]=u[0];
+
+      u[0]=1000*u[1]-1991.292*u[2]+991.3057*u[3]-1*e[0]+1.8187*e[1]-0.81873*e[2];
 
 
       /***********************************/
@@ -250,7 +275,6 @@ void loop() {
         pose_error = 0;
         ang_error = 0;
         v = 0;
-
         ctrlSpeed = 0;
 
         if (sw_b_on) {

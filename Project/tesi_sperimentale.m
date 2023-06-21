@@ -143,6 +143,13 @@ f_G_position_Zeros = zero(f_G_position);
 % plot_f_Request = ["Request", "stepplot", " [f_G_angle] Risposta gradino"];
 % plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
 % displayPlot(plot_f_Request, f_G_angle, plot_f_Options)
+% plot_f_Request = ["Request", "rlocus", " [f_G_angle] Luogo diretto"];
+% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, f_G_angle, plot_f_Options)
+% plot_f_Request = ["Request", "rlocus", " [f_G_angle] Luogo inverso"];
+% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, -f_G_angle, plot_f_Options)
+
 % % f_G_position 
 % plot_f_Request = ["Request", "impulse", " [f_G_position] Risposta impulso"];
 % plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
@@ -174,20 +181,34 @@ f_G_position_Zeros = zero(f_G_position);
 
 % Luogo delle radici negativo, non basta aggiungere un k proporzionale, non
 % stabilizza il sistema. E' necessario eliminare lo zero nell'originee
-% richiamare il reamo che parte dal semipiano positivo.
+% richiamare il ramo che parte dal semipiano positivo.
 
 %% Controllo dell'Angolo
 
 % f_K_angle_Gain = 28;
 % f_R_angle = -(s+0.1289)*(s+5.5)/s/(s+12);
 
-f_K_angle_Gain = 1000;
-f_R_angle = -(s+1)*(s+3.8)/s/(s+100);
-% f_R_angle = -(s+1)*(s+3)/s/(s+100);
+% f_K_angle_Gain = 210;
+% f_R_angle = -(s+2.5)*(s+6)/(s*(s+50));
+
+% f_K_angle_Gain = 1;
+% f_R_angle = -(s+1)*(s+3.8)/s/(s+45);
+
+% f_K_angle_Gain = 740;
+% f_R_angle = -(s+1)*(s+3.8)/(s*(s+50));
+
+
+% f_K_angle_Gain = 1000;
+% f_R_angle = -(s+1)*(s+3.8)/(s*(s+100));
+
+f_K_angle_Gain = 357;
+f_R_angle = -(s+3.1)*(s+6.8)/(s*(s+66));
+
 
 % minreal(zpk(f_R_angle))
 
 f_KR_angle = f_K_angle_Gain * f_R_angle;
+%zpk(f_KR_angle)
 
 % Analisi del sistema di controllo progettato 
 
@@ -210,7 +231,7 @@ f_T_angle = minreal(f_G_angle/(1+f_L_angle));
 % displayPlot(plot_f_Request, f_L_angle, plot_f_Options)
 % % pzplot(f_G_angle, f_Sensitivity_F_angle, f_L_angle)
 % % MOSTRO
-% plot_f_Request = ["Request", "step", " Risposta CLOSED LOOP"];
+% plot_f_Request = ["Request", "step", " Risposta al gradino [f_Sensitivity_F_angle] CLOSED LOOP"];
 % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 % displayPlot(plot_f_Request, f_Sensitivity_F_angle, plot_f_Options)
 % 
@@ -219,10 +240,10 @@ f_T_angle = minreal(f_G_angle/(1+f_L_angle));
 % displayPlot(plot_f_Request, f_T_angle, plot_f_Options)
 
 f_KR_angle_LTI = ss(f_KR_angle);
-A_CTRL_angle  = f_KR_angle_LTI.A;
-B_CTRL_angle  = f_KR_angle_LTI.B;
-C_CTRL_angle  = f_KR_angle_LTI.C;
-D_CTRL_angle  = f_KR_angle_LTI.D;
+A_CTRL_angle = f_KR_angle_LTI.A;
+B_CTRL_angle = f_KR_angle_LTI.B;
+C_CTRL_angle = f_KR_angle_LTI.C;
+D_CTRL_angle = f_KR_angle_LTI.D;
 
 % algoritmo per la discretizzazione
 alpha_angle = 0.5; % Discretizzazione tramite Tustin
@@ -242,117 +263,202 @@ R1 = c2d(f_KR_angle, Ts);  %this is a short display, go to var panel and extract
 % set 1 to display output and copy, 0 to block
 returnArduinoCode(R1.Numerator, R1.Denominator, 1)
 
+
+
+
+
+
+
+
 %% Controllo della posizione  (1) 
 
+cascade_f_G_XTheta = minreal((f_G_position)/(f_G_angle))
 
-%% Controllo della posizione  (2)
-
-f_G_XTheta = minreal((f_G_position)/(1+(f_L_angle)));
-
-% plot_f_Request = ["Request", "rlocus", " [f_G_XTheta] rlocus"];
+% plot_f_Request = ["Request", "rlocus", " [cascade_f_G_XTheta] rlocus"];
 % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_G_XTheta, plot_f_Options)
+% displayPlot(plot_f_Request, cascade_f_G_XTheta, plot_f_Options)
 
-% E' presente un ramo nella parte Re > 0, per ogni gain > 0
-% Sono presenti tre poli, uno nell'origine e due tra -1.4 e 3
-% Ma nessun ramo che si crea porta all'instabilità
-
-% il luogo delle radici positivo è complesso, provo il luogo negativo.
-
-plot_f_Request = ["Request", "rlocus", " [f_G_XTheta] rlocus"];
+plot_f_Request = ["Request", "rlocus", " [-cascade_f_G_XTheta] rlocus"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, -f_G_XTheta, plot_f_Options)
+displayPlot(plot_f_Request, -cascade_f_G_XTheta, plot_f_Options)
 
-% Anche il luogo inverso è instabile, a causa dei rami mossi verso in Re>0
+% plot_f_Request = ["Request", "bode", " [cascade_f_G_XTheta] rlocus"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, cascade_f_G_XTheta, plot_f_Options)
+% [Gm,Pm,Wcg,Wcp] = margin(cascade_f_G_XTheta)
+% Bode_Gain = 1.8;
+% % [1] Applying proportional control changing gain
+% % we search at w_c = 0  un margine positivo.
+% plot_f_Request = ["Request", "bode", " [cascade_f_G_XTheta] rlocus"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, (cascade_f_G_XTheta * Bode_Gain) , plot_f_Options)
+% %[2] Lag controller to decrease gain above a certain frequency range
+% %[3] Lead controller to boost pahse Pm
 
-% Notiamo che nel luogo negativo sono presenti asintoti obliqui, 
-% i quali conducono nel semipiano sinistro.
 
-% Quindi cerco di piegare i rami del luogo che formano un anello nel
-% semipiano destro verso quello sinistro, così da rendere il sistema
-% retroazionato stabile per un determinato guadagno k<0.
 
-% Aggiungo uno zero per ridurre il numero di asintoti, e modifico il
-% baricentro degli asintoti.
 
-% n - m = 3 asintoti, allora introduco uno zero tra 0 e 1.356 per ridurre
-% il numero a 2.
+cascade_f_K_position_Gain = 0.34;
+cascade_f_R_position = (s+0.38)/((s + 1.5) * (s + 3.5));
 
-% aggiungo uno zero a 1.2, ma non è sufficiente a stabilizzare il sistema
-% in catena chiusa
-% 1.4 to 0.
-
-f_K_position_Gain = 150;
-f_R_position = -(s+0.5)^2/s/(s+100);
-
-% Stabilizzando il sistema con il controllore e alla retroazione negativa
-% si può vedere come la risposta al gradino presenti:
-% - una sotto_elongazione del 5% [dovuta a presenza di uno zero positivo in anello chiuso]
-% - una sovra_elongazione del 25% [dovuta alla presenza di poli complessi coniugati al denominatore]
-% - un tempo di assestamento di 9 secondi
-% - la funzione a regime è quasi ad errore nullo
-
-f_KR_position = f_K_position_Gain * f_R_position;
+cascade_f_KR_position = cascade_f_K_position_Gain * cascade_f_R_position;
 
 % Analisi del sistema di controllo progettato 
 
 % Funzione d'Anello
-f_L_position = minreal(f_KR_position * f_G_XTheta);
+cascade_f_L_position = minreal(cascade_f_KR_position * cascade_f_G_XTheta);
 
-plot_f_Request = ["Request", "rlocus", " [f_L_position] rlocus"];
+plot_f_Request = ["Request", "rlocus", " [cascade_f_L_position] rlocus"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, f_L_position, plot_f_Options)
+displayPlot(plot_f_Request, cascade_f_L_position, plot_f_Options)
+
 
 % Funzione di Sensitività [f_Sensitivity_S_position]
-f_Sensitivity_S_position = minreal(1/(1+f_L_position));
+cascade_f_Sensitivity_S_position = minreal(1/(1 + cascade_f_L_position));
 % Funzione di Sensitività complementare [f_Sensitivity_F_position]
-f_Sensitivity_F_position = minreal(f_L_position/(1+f_L_position));
+cascade_f_Sensitivity_F_position = minreal(cascade_f_L_position/(1 + cascade_f_L_position));
 % Funzione di Sensitività del controllo [f_Sensitivity_Q_position]
-f_Sensitivity_Q_position = minreal(f_KR_position/(1+f_L_position));
+cascade_f_Sensitivity_Q_position = minreal(cascade_f_KR_position/(1 + cascade_f_L_position));
 
 % f_T_position
-f_T_position = minreal(f_G_position/(1+f_L_position));
-
-
-% % rlocus L(s)
-% plot_f_Request = ["Request", "rlocus", " [f_L_angle] rlocus"];
-% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_Sensitivity_F_position, plot_f_Options)
-% % pzplot(f_G_position, f_Sensitivity_F_position, f_L_position)
+cascade_f_T_position = minreal(f_G_position/(1 + cascade_f_L_position));
 
 % Risposta CLOSED LOOP F(s)
-plot_f_Request = ["Request", "step", " Risposta CLOSED LOOP [f_Sensitivity_F_position]"];
+plot_f_Request = ["Request", "step", " Risposta CLOSED LOOP [cascade_f_Sensitivity_S_position]"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, f_Sensitivity_F_position, plot_f_Options)
+displayPlot(plot_f_Request, cascade_f_Sensitivity_S_position, plot_f_Options)
 
-% % Risposta a; gradino T(s)
-% plot_f_Request = ["Request", "step", " Risposta Sistema [f_T_position]"];
-% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, f_T_position, plot_f_Options)
 
-f_KR_position_LTI = ss(f_KR_position);
+
+
+f_KR_position_LTI = ss(cascade_f_KR_position);
 A_CTRL_position = f_KR_position_LTI.A;
 B_CTRL_position = f_KR_position_LTI.B;
 C_CTRL_position = f_KR_position_LTI.C;
 D_CTRL_position = f_KR_position_LTI.D;
 
+
 % algoritmo per la discretizzazione
-alpha_position = 0.5; % Discretizzazione tramite Tustin
-I_position  = eye(size(A_CTRL_position, 1)); % matrice identità
+cascade_alpha_position = 0.5; % Discretizzazione tramite Tustin
+cascade_I_position  = eye(size(A_CTRL_position, 1)); % matrice identità
 % matrici del regolatore a tempo discreto
-A_alpha_position = I_position + Ts * (I_position - alpha_position * A_CTRL_position * Ts)^-1 * A_CTRL_position;
-B_alpha_1_position = (1 - alpha_position) * Ts * (I_position - alpha_position * A_CTRL_position * Ts)^-1 * B_CTRL_position;
-B_alpha_2_position = alpha_position * Ts * (I_position - alpha_position * A_CTRL_position * Ts)^-1 * B_CTRL_position;
+cascade_A_alpha_position = cascade_I_position + Ts * (cascade_I_position - cascade_alpha_position * A_CTRL_position * Ts)^-1 * A_CTRL_position;
+cascade_B_alpha_1_position = (1 - cascade_alpha_position) * Ts * (cascade_I_position - cascade_alpha_position * A_CTRL_position * Ts)^-1 * B_CTRL_position;
+cascade_B_alpha_2_position = cascade_alpha_position * Ts * (cascade_I_position - cascade_alpha_position * A_CTRL_position * Ts)^-1 * B_CTRL_position;
 
 
-% Z TO ARDUINO TBD
-% Continuos to Discrete
-R2 = c2d(f_KR_position, Ts);  %this is a short display, go to var panel and extract more decimals
 
 
-% Automated function to arduino
-% set 1 to display output and copy, 0 to block
-returnArduinoCode(R2.Numerator, R2.Denominator, 1)
+
+
+% %% Controllo della posizione  (2)
+% 
+% sumForces_f_G_XTheta = minreal((f_G_position)/(1+(f_L_angle)));
+% 
+% % plot_f_Request = ["Request", "rlocus", " [sumForces_f_G_XTheta] rlocus"];
+% % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% % displayPlot(plot_f_Request, sumForces_f_G_XTheta, plot_f_Options)
+% 
+% % E' presente un ramo nella parte Re > 0, per ogni gain > 0
+% % Sono presenti tre poli, uno nell'origine e due tra -1.4 e 3
+% % Ma nessun ramo che si crea porta all'instabilità
+% 
+% % il luogo delle radici positivo è complesso, provo il luogo negativo.
+% 
+% % plot_f_Request = ["Request", "rlocus", " [f_G_XTheta] rlocus"];
+% % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% % displayPlot(plot_f_Request, -sumForces_f_G_XTheta, plot_f_Options)
+% 
+% % Anche il luogo inverso è instabile, a causa dei rami mossi verso in Re>0
+% 
+% % Notiamo che nel luogo negativo sono presenti asintoti obliqui, 
+% % i quali conducono nel semipiano sinistro.
+% 
+% % Quindi cerco di piegare i rami del luogo che formano un anello nel
+% % semipiano destro verso quello sinistro, così da rendere il sistema
+% % retroazionato stabile per un determinato guadagno k<0.
+% 
+% % Aggiungo uno zero per ridurre il numero di asintoti, e modifico il
+% % baricentro degli asintoti.
+% 
+% % n - m = 3 asintoti, allora introduco uno zero tra 0 e 1.356 per ridurre
+% % il numero a 2.
+% 
+% % aggiungo uno zero a 1.2, ma non è sufficiente a stabilizzare il sistema
+% % in catena chiusa
+% % 1.4 to 0.
+% 
+% sumForces_f_K_position_Gain = 150;
+% sumForces_f_R_position = -(s+0.5)^2/s/(s+100);
+% 
+% % Stabilizzando il sistema con il controllore e alla retroazione negativa
+% % si può vedere come la risposta al gradino presenti:
+% % - una sotto_elongazione del 5% [dovuta a presenza di uno zero positivo in anello chiuso]
+% % - una sovra_elongazione del 25% [dovuta alla presenza di poli complessi coniugati al denominatore]
+% % - un tempo di assestamento di 9 secondi
+% % - la funzione a regime è quasi ad errore nullo
+% 
+% sumForces_f_KR_position = sumForces_f_K_position_Gain * sumForces_f_R_position;
+% 
+% % Analisi del sistema di controllo progettato 
+% 
+% % Funzione d'Anello
+% sumForces_f_L_position = minreal(sumForces_f_KR_position * sumForces_f_G_XTheta);
+% 
+% % plot_f_Request = ["Request", "rlocus", " [sumForces_f_L_position] rlocus"];
+% % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% % displayPlot(plot_f_Request, sumForces_f_L_position, plot_f_Options)
+% 
+% % Funzione di Sensitività [f_Sensitivity_S_position]
+% sumForces_f_Sensitivity_S_position = minreal(1/(1 + sumForces_f_L_position));
+% % Funzione di Sensitività complementare [f_Sensitivity_F_position]
+% sumForces_f_Sensitivity_F_position = minreal(sumForces_f_L_position/(1 + sumForces_f_L_position));
+% % Funzione di Sensitività del controllo [f_Sensitivity_Q_position]
+% sumForces_f_Sensitivity_Q_position = minreal(sumForces_f_KR_position/(1 + sumForces_f_L_position));
+% 
+% % f_T_position
+% sumForces_f_T_position = minreal(f_G_position/(1 + sumForces_f_L_position));
+% 
+% 
+% % % rlocus L(s)
+% % plot_f_Request = ["Request", "rlocus", " [f_L_angle] rlocus"];
+% % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% % displayPlot(plot_f_Request, f_Sensitivity_F_position, plot_f_Options)
+% % % pzplot(f_G_position, f_Sensitivity_F_position, f_L_position)
+% 
+% % Risposta CLOSED LOOP F(s)
+% % plot_f_Request = ["Request", "step", " Risposta CLOSED LOOP [sumForces_f_Sensitivity_F_position]"];
+% % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% % displayPlot(plot_f_Request, sumForces_f_Sensitivity_F_position, plot_f_Options)
+% 
+% % % Risposta a; gradino T(s)
+% % plot_f_Request = ["Request", "step", " Risposta Sistema [f_T_position]"];
+% % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% % displayPlot(plot_f_Request, f_T_position, plot_f_Options)
+% 
+% sumForces_f_KR_position_LTI = ss(sumForces_f_KR_position);
+% sumForces_A_CTRL_position = sumForces_f_KR_position_LTI.A;
+% sumForces_B_CTRL_position = sumForces_f_KR_position_LTI.B;
+% sumForces_C_CTRL_position = sumForces_f_KR_position_LTI.C;
+% sumForces_D_CTRL_position = sumForces_f_KR_position_LTI.D;
+% 
+% % algoritmo per la discretizzazione
+% sumForces_alpha_position = 0.5; % Discretizzazione tramite Tustin
+% sumForces_I_position  = eye(size(sumForces_A_CTRL_position, 1)); % matrice identità
+% % matrici del regolatore a tempo discreto
+% sumForces_A_alpha_position = sumForces_I_position + Ts * (sumForces_I_position - sumForces_alpha_position * sumForces_A_CTRL_position * Ts)^-1 * sumForces_A_CTRL_position;
+% sumForces_B_alpha_1_position = (1 - sumForces_alpha_position) * Ts * (sumForces_I_position - sumForces_alpha_position * sumForces_A_CTRL_position * Ts)^-1 * sumForces_B_CTRL_position;
+% sumForces_B_alpha_2_position = sumForces_alpha_position * Ts * (sumForces_I_position - sumForces_alpha_position * sumForces_A_CTRL_position * Ts)^-1 * sumForces_B_CTRL_position;
+% 
+% 
+% % Z TO ARDUINO TBD
+% % Continuos to Discrete
+% % sumForces_R2 = c2d(sumForces_f_KR_position, Ts);  %this is a short display, go to var panel and extract more decimals
+% 
+% 
+% % Automated function to arduino
+% % set 1 to display output and copy, 0 to block
+% % returnArduinoCode(sumForces_R2.Numerator, sumForces_R2.Denominator, 1)
 
 %% END Segment
 % Create a figure

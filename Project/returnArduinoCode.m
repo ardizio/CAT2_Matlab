@@ -4,7 +4,7 @@ function returnArduinoCode(Numerator, Denominator, CopyOption)
     % arduinoString_wait = "";
     % arduinoString_control = "";
     arduinoSpaces = "      ";
-    arduinoString_result = "u[0]=";
+    arduinoString_result = "u_angle[0]=";
 
     e_counter = 0;
     u_counter = 1;
@@ -15,8 +15,10 @@ function returnArduinoCode(Numerator, Denominator, CopyOption)
     count_cells_num = numel(Numerator);
     count_cells_den = numel(Denominator);  
 
+    multiplier = -1;
+
     if count_cells_num == 1
-        invertedArray_Num = Numerator{1} * -1;
+        invertedArray_Num = Numerator{1} * multiplier;
         % disp(invertedArray_Num);
         % disp(numel(invertedArray_Num));
         for i = 1:numel(invertedArray_Num)
@@ -25,13 +27,13 @@ function returnArduinoCode(Numerator, Denominator, CopyOption)
              if(invertedArray_Num(i) > 0 && i > 1)
                  needPlus = "+";
              end
-            arduinoString_result = arduinoString_result + needPlus + num2str(invertedArray_Num(i)) + "*u["+num2str(u_counter)+"]";
+            arduinoString_result = arduinoString_result + needPlus + num2str(invertedArray_Num(i)) + "*u_angle["+num2str(u_counter)+"]";
             u_counter = u_counter + 1;
         end
 
     end
     if count_cells_den == 1
-        invertedArray_Den = Denominator{1} * -1;
+        invertedArray_Den = Denominator{1} * multiplier;
         % disp(invertedArray_Den);
         % disp(numel(invertedArray_Den));
          for i = 1:numel(invertedArray_Den)
@@ -40,7 +42,7 @@ function returnArduinoCode(Numerator, Denominator, CopyOption)
              if(invertedArray_Den(i) > 0)
                  needPlus = "+";
              end
-             arduinoString_result = arduinoString_result + needPlus + num2str(invertedArray_Den(i)) + "*e["+num2str(e_counter)+"]";
+             arduinoString_result = arduinoString_result + needPlus + num2str(invertedArray_Den(i)) + "*e_angle["+num2str(e_counter)+"]";
              e_counter = e_counter + 1;
         end
     end

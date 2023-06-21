@@ -13,38 +13,40 @@
 #define AMT22_ZERO 0x70   //Set Zero       nei bytes [0x00, 0x70]
 
 //Serial and SPI data transfer speeds
-#define BAUDRATE 57600    //data transfer rate in bits per second (bps) or baud
+#define BAUDRATE 57600    //Used in serial monitor
 #define BAUDRATE_2 19200  //baud
 #define MAXSPS 8000       //12500 //the maximum clock speed 
 
 // ENCODER RESOLUTION COSTANTS
 // AMT22 is a 12 and 14 bit encoder
-#define RES12 12         //definig for 12 bit encoder
-#define RES14 14         //definig for 14 bit encoder
+#define RES12 12          //definig for 12 bit encoder
+#define RES14 14          //definig for 14 bit encoder
 
 // ENCODER PINS
-#define ENC 10           //ENCODER definition
-#define SPI_MOSI 51      //Master Out <- Slave In
-#define SPI_MISO 50      //Master In  -> Slave Out
-#define SPI_SCLK 52      //Serial Clock
+#define ENC 10            //ENCODER definition
+#define SPI_MOSI 51       //Master Out <- Slave In
+#define SPI_MISO 50       //Master In  -> Slave Out
+#define SPI_SCLK 52       //Serial Clock
 
 // SWITCH PINS
-#define SWITCH_BLACK A3  // Switch Black  [analog3]
-#define SWITCH_WHITE A1  // Switch White  [analog1]
-#define VCC_PIN 31       // Power supply
+#define SWITCH_BLACK A3   // Switch Black  [analog3]
+#define SWITCH_WHITE A1   // Switch White  [analog1]
+#define VCC_PIN 31        // Power supply
 #define AnalogThreshold 600   // GIVEN Threshold
 
-#define CONST 0.0208     // per la conversione da angoli in cm
-#define OFFSET_ANGLE 10  // da 0 a 4096 come da  0° a 360°  // da ricalibrare // forse di 0.6° [15]
-#define SAMPLE_TIME 2    //milliseconds GIVEN tempo di campionamento
+#define CONST 0.0208      // per la conversione da angoli in cm
+#define OFFSET_ANGLE 10   // da 0 a 4096 come da  0° a 360°  // da ricalibrare // forse di 0.6° [15]
+#define SAMPLE_TIME 6     //milliseconds GIVEN tempo di campionamento
 
 // CONTROL VARIABLES
 #define MAX_ERROR 30      // GIVEN D? TBD
 #define MIN_ERROR 3       // GIVEN D? TBD
-#define REF_ANGLE 180     //
+
+#define REF_ANGLE 180     // angolo di riferimento
 #define INIT_POSE 70      // GIVEN 70cm from start
 #define REF_POSE 70       // added by me
 
+#define QUANTIZER 0.00019175
 
 // Casistiche possibili
 // MACHINE STATES
@@ -58,7 +60,7 @@ typedef enum { INIT,
                
 // SERIAL COMMUNICATION WITH MOTOR CONTROL ARDUINO
 char bufferRX[16];
-char display_speedControl[16];
+char ctrlAction_str[16];
 
  
 
@@ -69,35 +71,35 @@ double Angle1_pendulumMinusOffset = 0.0, Angle2_Pendulum = 0.0, newAngle3_fromEn
 
 
 
-char read_Serial2;             //lettura porta seriale
-uint8_t id_BufferRX = 0;       // id_BufferRX or zero
-int value_BufferRX = 0;        // atoi BufferRx[id]
-
+char c;         //lettura porta seriale
+uint8_t bidx = 0;   // bidx or zero
+int readVal = 0;    // atoi BufferRx[id]
 
 
 
 double ang_error = 0.0;    //TBD
 double pose_error = 0.0;   //TBD
-long speedControl = 0;     //TBD
+long ctrlSpeed = 0;        //TBD
 double intAngle = 0.0, previousAngle_fromEncoder = 0.0, cart_Position = 0.0;
-bool isActive_Switch_White = false, isActive_Switch_Black = false;
+bool sw_w_on = false, sw_b_on = false;
 
 
 // Definizione dello stato iniziale del sistema
-machineState state = INIT;     // INITIAL STATE
+machineState state = INIT;       // INITIAL STATE
+machineState lastState = INIT;   // LASTSTATE STATE
+
 
 /////////////////////////////
 // REGULATOR VECTORS DEFINITION///////
 
-// POSITION
-double u_position[4] = {0.0};		// Regulator error control input
-double e_position[4] = {0.0};		// Regulator error vector 
-
 // ANGLE
-double u_angle[4] = {0.0};		  // Regulator error control input
-double e_angle[4] = {0.0};		  // Regulator error vector 
+double u_angle[] = {0, 0, 0, 0, 0};		  // Regulator error control input
+double e_angle[] = {0, 0, 0, 0, 0};		  // Regulator error vector 
+// POSITION
+double u_position[] = {0, 0, 0, 0, 0};	// Regulator error control input
+double e_position[] = {0, 0, 0, 0, 0};		// Regulator error vector 
 
-double motorSpeed = 0.0;        // MOTOR SPEED
+double v = 0.0;        // MOTOR SPEED
 double ang_radiants = 0;
 
 //////////////////////////////
@@ -131,26 +133,18 @@ void loop() {
 
   // [ 1 ]
   //Controllo che i valori degli switch rientrino all'inteno del limite imposto AnalogThreshold
-  if (value_Switch_Black > AnalogThreshold){
-    isActive_Switch_Black = true;
-  }
-  else{
-    isActive_Switch_Black = false;
-  }
+  if (value_Switch_Black > AnalogThreshold){ sw_b_on = true;} 
+  else{ sw_b_on = false; }
 
-  if (value_Switch_White > AnalogThreshold){
-    isActive_Switch_White = true;
-  }
-  else{
-    isActive_Switch_White = false;
-  }
+  if (value_Switch_White > AnalogThreshold){ sw_w_on = true; } 
+  else{ sw_w_on = false; }
 
 
 
   // [ 2 ]
   // READ CART POSITION and ANGLE from Encoder SPI
   if (state != 0) {
-    uint8_t attempts = 0;
+    //uint8_t attempts = 0;
 
     // encoderPosition è definito da 0 a 4096 come da 0° a 360°
     uint16_t encoderPosition = getPositionSPI(ENC, RES12);  
@@ -164,49 +158,49 @@ void loop() {
     //Genrero l'angolo iniziale
     if ((previousAngle_fromEncoder - newAngle3_fromEncoder) > 300) {
       intAngle = intAngle + 360;
-    }
-    else if ((previousAngle_fromEncoder - newAngle3_fromEncoder) < -300) {
+    } else if ((previousAngle_fromEncoder - newAngle3_fromEncoder) < -300) {
       intAngle = intAngle - 360;
     }
 
     previousAngle_fromEncoder = newAngle3_fromEncoder;
     cart_Position = (intAngle + newAngle3_fromEncoder) * CONST;  //Trasformo gradi in  cm
     //would like top print
+
+    //for nextRun: previousAngle_fromEncoder
+    //for thisRun: cart_Position && intAngle
   }
-  //for nextRun: previousAngle_fromEncoder
-  //for thisRun: cart_Position && intAngle
+  
 
 
 
   // [ 3 ]
   // READ PENDULUM ANGLE from Serial2
   while (Serial2.available()) {                          // Se Serial2 è disponibile
-    read_Serial2 = Serial2.read();                       // Read Serial2 Value
-    if (read_Serial2 == 13 || read_Serial2 == 10) {      // Se è 10 o 13 (perchè a noi interessano 13, 10?)
-      if (id_BufferRX > 0) {
-        bufferRX[id_BufferRX] = 0;                       // CLEAR bufferRX[id_BufferRX] 
-        value_BufferRX = atoi(bufferRX);                 // SET value_BufferRX as 
+    c = Serial2.read();                       // Read Serial2 Value
+    if (c == 13 || c == 10) {      // Se è 10 o 13 (perchè a noi interessano 13, 10?)
+      if (bidx > 0) {
+        bufferRX[bidx] = 0;                       // CLEAR bufferRX[bidx] 
+        readVal = atoi(bufferRX);                 // SET readVal as 
                                                          // atoi(String to integer) Demo[tring:"300" -> Int:300]
       }
-      id_BufferRX = 0;                                   // SET id_BufferRX at 0
+      bidx = 0;                                   // SET bidx at 0
     } 
     else {                                               // FIRST ITERATION and IF Serial2 != 10 or 13
-      bufferRX[id_BufferRX] = read_Serial2;              // SET bufferRX[id_BufferRX] as serial input
-      id_BufferRX++;                                     // increment id_BufferRX by 1
-      id_BufferRX = id_BufferRX & 0x07;                  // SET check if (id_BufferRX reached 7 [0-7]) : bool
+      bufferRX[bidx] = c;              // SET bufferRX[bidx] as serial input
+      bidx++;                                     // increment bidx by 1
+      bidx = bidx & 0x07;                  // SET check if (bidx reached 7 [0-7]) : bool
     }
   }
   //Diff
-  if (value_BufferRX > 5000) {                           // se value_BufferRX > 5000
-    encodedAngle_2 = value_BufferRX - 0x4000;            // encodedAngle_2 = value_BufferRX - 16384(as hex)
+  if (readVal > 5000) {                           // se readVal > 5000
+    encodedAngle_2 = readVal - 0x4000;            // encodedAngle_2 = readVal - 16384(as hex)
     Angle2_Pendulum = encodedAngle_2 / 4096.0 * 360.0;
   }
-  //MEH, Where should i Use?
   else {
-    encodedAngle_1 = value_BufferRX - OFFSET_ANGLE;     //errore angolo SECONDO ME
+      //MEH, Where should i Use?
+    encodedAngle_1 = readVal - OFFSET_ANGLE;     //errore angolo SECONDO ME
     Angle1_pendulumMinusOffset = (encodedAngle_1 / 4096.0) * 360.0;
   }
-  //The most USEFUL
 
 
 
@@ -224,11 +218,15 @@ void loop() {
 
     // Go Toward BLACK Switch
     case INIT:{  
-      Serial.println("Homing");
-      speedControl = 2500;
-      if (isActive_Switch_Black) {             // if cart at "Home"
-        speedControl = 0;                      // SET speedControl at 0
-        state = RESET;                         // NEXT phase: .RESET
+      // if(lastState != INIT){
+      //   Serial.println("INIT");
+      //   lastState = INIT;
+      // }
+      Serial.println("INIT");
+      ctrlSpeed = 2500;
+      if (sw_b_on) {          // if cart at "Home"
+        ctrlSpeed = 0;                      // SET ctrlSpeed at 0
+        state = RESET;                      // NEXT phase: .RESET
       }
       break;
     }
@@ -243,55 +241,66 @@ void loop() {
       state = REACH_POSE_BLACK;               // NEXT phase: .REACH_POSE_BLACK
       break;
     }
+    
 
 
     //To Reach initial Position
     case REACH_POSE_BLACK:{
-      Serial.println("Reaching InitialPosition from Black");
-      speedControl = -2500;                    // SET speedControl at -2500
-      if (cart_Position > INIT_POSE) {         // if cart > "INIT_POSE"
-        speedControl = 0;                      // RESET speedControl at 0 [don't push] ho sorpassato, credo
-        state = WAIT;                          // NEXT phase: .WAIT
-      }                                        // else NEXT phase still: .REACH_POSE_BLACK
+      Serial.println("REACH_POSE_BLACK");
+      ctrlSpeed = -2500;                    // SET ctrlSpeed at -2500
+      if (cart_Position > INIT_POSE) {      // if cart > "INIT_POSE"
+        ctrlSpeed = 0;                      // RESET ctrlSpeed at 0 [don't push] ho sorpassato, credo
+        state = WAIT;                       // NEXT phase: .WAIT
+      }                                     // else NEXT phase still: .REACH_POSE_BLACK
       break;
     }
      
 
     //To Reach initial Position
     case REACH_POSE_WHITE: {
-      Serial.println("Reaching InitialPosition from White");
-      speedControl = 2500;                     // SET speedControl at 2500
-      if (cart_Position < INIT_POSE) {         // if cart < "INIT_POSE"
-        speedControl = 0;                      // RESET speedControl at 0 [don't push] ho sorpassato, credo
-        state = WAIT;                          // NEXT phase: .WAIT
-      }                                        // else NEXT phase still: .REACH_POSE_WHITE
+      Serial.println("REACH_POSE_WHITE");
+      ctrlSpeed = 2500;                     // SET ctrlSpeed at 2500
+      if (cart_Position < INIT_POSE) {      // if cart < "INIT_POSE"
+        ctrlSpeed = 0;                      // RESET ctrlSpeed at 0 [don't push] ho sorpassato, credo
+        state = WAIT;                       // NEXT phase: .WAIT
+      }                                     // else NEXT phase still: .REACH_POSE_WHITE
       break;
     }
      
 
     //Waiting to reach the upside position IDLE
     case WAIT: {
-      Serial.println("WAITING");
-      // RESET speedControl at 0
-      speedControl = 0;
-      //trovare l'errore
-      ang_error = REF_ANGLE - Angle1_pendulumMinusOffset; 
-      
-      
-      if (abs(ang_error) < MIN_ERROR){
+      Serial.println("WAIT");
+      ctrlSpeed = 0;
+      ang_error = 180 - Angle1_pendulumMinusOffset;
+
+      if(abs(ang_error) < MIN_ERROR){
         state = CTRL;
+         // Serial.print("{");
+        // Serial.print(Angle1_pendulumMinusOffset);
+        // Serial.print(", ");
+        // Serial.print(ang_error);
+        // Serial.print(", ");
+        // Serial.print(cart_Position);
+        // Serial.print("}");
+        // Serial.print("\n");
+        Serial.print("from WAIT to CONTROL");
       }
+
+      v=0;
       
-      motorSpeed = 0;                         // RESET motorSpeed at 0
+      e_angle[4] = 0;
+      e_angle[3] = 0;
+      e_angle[2] = 0;
+      e_angle[1] = 0;
+      e_angle[0] = 0;
 
-      // INIT at zero
-      // Position
-      e_position[4] = {0.0};		
-      u_position[4] = {0.0};
-      // Angle
-      e_angle[4] = {0.0};
-      u_angle[4] = {0.0};
-
+      u_angle[4] = 0;
+      u_angle[3] = 0;
+      u_angle[2] = 0;
+      u_angle[1] = 0;
+      u_angle[0] = 0;
+    
       break;
     }
       
@@ -299,94 +308,96 @@ void loop() {
     
     // Regulator Control State
     case CTRL:{
-     
-      //trovare l'errore
-      ang_error = REF_ANGLE - Angle1_pendulumMinusOffset
-      // converto l'angolo da gradi a radianti
-      ang_radiants = ang_error * 3,14 / 180
+      Serial.println("CONTROL");
 
-
-      //e_angle[4]=e_angle[3];
-      //e_angle[3]=e_angle[2];
-      e_angle[2]=e_angle[1];
-      e_angle[1]=e_angle[0];
-      e_angle[0]=-ang_radiants;
+      ang_error = 180 - Angle1_pendulumMinusOffset;
+      ang_radiants = ang_error * 3.14 / 180; 
       
-      //u_angle[4]=u_angle[3];
-      //u_angle[3]=u_angle[2];
-      u_angle[2]=u_angle[1];
-      u_angle[1]=u_angle[0];
+      e_angle[4] = e_angle[3];
+      e_angle[3] = e_angle[2];
+      e_angle[2] = e_angle[1];
+      e_angle[1] = e_angle[0];
+      e_angle[0] = - ang_radiants;
+    
+      u_angle[4] = u_angle[3];
+      u_angle[3] = u_angle[2];
+      u_angle[2] = u_angle[1];
+      u_angle[1] = u_angle[0];
       //TBD IMPLEMENT YOUR CONTROLLER HERE
-     
-
-      /*
-      if (u_angle[0]>20.0){
-        u_angle[0]=20.0;
-      }
-      if (u_angle[0]<-20.0){
-        u_angle[0]=-20.0;
-      }
-      */
-
+      u_angle[0]=290*u_angle[1]-577.3355*u_angle[2]+287.3397*u_angle[3]-1*e_angle[0]+1.9139*e_angle[1]-0.91393*e_angle[2];
+      
 
       //Speed settings
-      motorSpeed += u_angle[0] / 0.7 * (SAMPLE_TIME / 1000.0);  // FORCE/VELOCITY conversion
+      v += u_angle[0] / 0.7 * (SAMPLE_TIME / 1000.0);  // FORCE/VELOCITY conversion
 
-      if (motorSpeed > 0.9){
-        motorSpeed = 0.9;
+      if (v > 0.9){
+        v = 0.9;
       }
-      if (motorSpeed < -0.9){
-        motorSpeed = -0.9;
+      if (v < -0.9){
+        v = -0.9;
       }
         
       //Conversion Speed/rpm
-      speedControl = motorSpeed / 0.000109375;
+      ctrlSpeed = v / 0.000109375;
 
+ 
+      Serial.print("v: ");
+      Serial.print(v);
+      Serial.print(" | ");
+      Serial.print("ctrlSpeed: ");
+      Serial.print(ctrlSpeed);
+      Serial.print(" | ");
+      Serial.print("ang_error: ");
+      Serial.print(ang_error);
+      Serial.print(" | ");
+      Serial.print("u_angle[0]: ");
+      Serial.print(u_angle[0]);
+      Serial.print("\n");
+      
+      if (abs(ang_error) > MAX_ERROR || sw_b_on || sw_w_on) { 
+        Serial.println("INIT from CONTROL");
 
-      //ctrlAccel = controlAction; //round(controlAction);
-      //speedControl += ctrlAccel*deltaTime;
-
-      if (abs(ang_error) > MAX_ERROR || isActive_Switch_Black || isActive_Switch_White) {
-        //Serial.println("Sono qui");
-        pose_error = 0;
+        v = 0;
         ang_error = 0;
-        motorSpeed = 0;
+        ctrlSpeed = 0;
 
-        speedControl = 0;
-
-        if (isActive_Switch_Black) {
+        if (sw_b_on) {
+          state = REACH_POSE_BLACK;
+        }
+        if (sw_w_on) {
           state = REACH_POSE_WHITE;
         }
-        if (isActive_Switch_White) {
+        if (!sw_b_on && !sw_w_on) {
           state = REACH_POSE_WHITE;
         }
-        if (!isActive_Switch_Black && !isActive_Switch_White) {
-          state = REACH_POSE_WHITE;
-        }
+        lastState = CTRL;
       }
       break;
-    }
-      
+    }   
   }
 
   // Saturate Control Action
-  if (speedControl > MAXSPS){
-    speedControl = MAXSPS;
+  if (ctrlSpeed > MAXSPS){
+    ctrlSpeed = MAXSPS;
+    Serial.print("[M] SATURATION");
   }
-  if (speedControl < -MAXSPS){
-    speedControl = -MAXSPS;
+  if (ctrlSpeed < -MAXSPS){
+    ctrlSpeed = -MAXSPS;
+    Serial.print("[m] SATURATION");
   }
 
-  
-  //PRINT DATA
+  ltoa(ctrlSpeed, ctrlAction_str, 10);
+  Serial3.println(ctrlAction_str);
+
   Serial.print(ang_radiants);
   Serial.print(" - ");
   Serial.print(u_angle[0]);
   Serial.print(" - ");
-  Serial.println(motorSpeed);
+  Serial.println(v);
 
   //Delay
-  delay(SAMPLE_TIME);  // 2millis, tempo imposto per la discretizzazione del controllo
+  // 2millis, tempo imposto per la discretizzazione del controllo
+  delay(SAMPLE_TIME);  
 }
 
 
