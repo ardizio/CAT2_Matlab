@@ -67,6 +67,7 @@ uint8_t bidx = 0;  // bidx or zero
 int readVal = 0;   // converts the string argument str to an integer BufferRx[id]
 
 double angle_error = 0.0;
+double angle_error_rad = 0.0;
 double angle_rad_1 = 0;
 double position_error = 0.0;
 long ctrlSpeed = 0;
@@ -112,8 +113,6 @@ void loop() {
 
   int val_w = analogRead(SW_W);
   int val_b = analogRead(SW_B);
-
-
 
   /****************************************************/
   // [ 1 ]
@@ -179,7 +178,8 @@ void loop() {
     encAngle_1 = readVal - OFFSET_ANGLE;
     ang_1 = (encAngle_1 / 4096.0) * 360.0;      // valore angolo in gradi
   }
-  angle_error = REF_ANGLE_POSITION - ang_1;
+  angle_error = 180 - ang_1;
+  angle_error_rad = angle_error * 3.14 / 180;
   /***************************************************/
 
 
@@ -240,7 +240,7 @@ void loop() {
     }
 
     case WAIT:{  //Waiting to reach the upside position
-      Serial.println("WAIT | Waiting angle to be between -5 and 5");
+      // Serial.println("WAIT | Waiting angle to be between -5 and 5");
       ctrlSpeed = 0;
       v = 0;
 
@@ -278,31 +278,31 @@ void loop() {
 
     case CTRL:{  // Regulator Control state
       Serial.println("CTRL | Executing control algos");
-      angle_rad_1 = angle_error * 3.14 / 180; // converto l'angolo da gradi a radianti
+      //angle_rad_1 = angle_error * 3.14 / 180; // converto l'angolo da gradi a radianti
 
     
+    
+
+      // -- position --
+      e_p[2] = e_p[1];
+      e_p[1] = e_p[0];
+      e_p[0] = - position_error;
+      u_p[2] = u_p[1];
+      u_p[1] = u_p[0];
+      //u_p[0]= 1 * (e_p[0] + e_p[1] + e_p[2] - u_p[0]D - u_p[1]D - u_p[2]D);
+      u_p[0] = (- 0.0006768664772887434 * e_p[1]) + (0.0006763522535967913 * e_p[2]) - (0 * u_p[0]) + (1 * u_p[0] ) + (1.990028938436608 * u_p[1]) + (-0.990049833749168 * u_p[2]);
+
+
       // -- angle --
       e_a[2] = e_a[1];
       e_a[1] = e_a[0];
       //e_a[2] = e_a[1];
       u_a[2] = u_a[1];
       u_a[1] = u_a[0];
-
-      // -- position --
-      e_p[2] = e_p[1];
-      e_p[1] = e_p[0];
-      e_p[0] = - position_error;
-
-      u_p[2] = u_p[1];
-      u_p[1] = u_p[0];
-
-      //u_p[0]= 1 * (e_p[0] + e_p[1] + e_p[2] - u_p[0]D - u_p[1]D - u_p[2]D);
-      u_p[0] = (0 * e_p[0]) + (- 0.0006768664772887434 * e_p[1]) + (0.0006763522535967913 * e_p[2]) - (0 * u_p[0]) + (1 * u_p[0] ) + (1.990028938436608 * u_p[1]) + (-0.990049833749168 * u_p[2]);
-
-      e_a[0] = u_p[0] - angle_rad_1;
-
+      //e_a[0] = u_p[0] - angle_error;
+      e_a[0] = -angle_error_rad + u_p[0];
       //u_a[0]= 1 * (e_a[0]N + e_a[1]N + e_a[2]N - u_a[0]D - u_a[1]D - u_a[2]D);
-      u_a[0] = (267 * e_a[0]) + (- 529.0366795060363 * e_a[1]) + (262.0577703362463 * e_a[2]) + (-1 * u_a[0]) + (1.876340995079374 * u_a[1]) + (- 0.876340995079373 * u_a[1]);
+      u_a[0] = (-267 * e_a[0]) + ( 529.0366795060363 * e_a[1]) + (-262.0577703362463 * e_a[2])  - (-1.876340995079374 * u_a[1]) - ( 0.876340995079373 * u_a[2]);
 
 
 
@@ -316,9 +316,9 @@ void loop() {
 
       /***********************************/
       // Speed setting
-      v += u_a[0] / 0.7 * (SAMPLE_TIME / 1000.0);  // FORCE/VELOCITY conversion
+      v +=  u_a[0] / 0.7 * (SAMPLE_TIME / 1000.0);  // FORCE/VELOCITY conversion
       if (v > 0.9){ v = 0.9; }
-      if (v < -0.9){ v = -0.9;}
+      if (v < -0.9){ v = -0.9; }
       /***********************************/
 
 
@@ -330,12 +330,14 @@ void loop() {
       //ctrlSpeed += ctrlAccel*deltaTime;
       /***********************************/
 
-    
+
+      Serial.println(String(angle_error) + "," + String(angle_error_rad));
 
       if (abs(angle_error) > MAX_ANGLE_ERROR || sw_b_on || sw_w_on) {
         //Serial.println("Sono qui");
         position_error = 0;
         angle_error = 0;
+        angle_error_rad = 0;
         v = 0;
         ctrlSpeed = 0;
         if (sw_b_on) { state = REACH_POSE_BLACK; }
