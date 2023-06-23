@@ -77,6 +77,9 @@ bool sw_w_on = false, sw_b_on = false;
 
 /////////////////////////////
 // REGULATOR VECTORS DEFINITION///////
+double u = 0.0;          // Control input
+
+
 // -- angle --
 double e_a[] = {0, 0, 0, 0, 0};	  // Regulator error vector 
 double u_a[] = {0, 0, 0, 0, 0};   // Regulator error control input
@@ -118,11 +121,10 @@ void loop() {
   /****************************************************/
   // [ 1 ]
   //Controllo che i valori degli switch rientrino all'inteno del limite imposto AnalogThreshold
-  if (val_b > THR){ sw_b_on = true; }
-  else{ sw_b_on = false; }
-
-  if (val_w > THR){sw_w_on = true; }
-  else{ sw_w_on = false; }
+  if (val_b > THR){sw_b_on = true;}
+  else{sw_b_on = false;}
+  if (val_w > THR){sw_w_on = true;}
+  else{ sw_w_on = false;}
   /****************************************************/
    
 
@@ -130,7 +132,6 @@ void loop() {
   /****************************************************/
   // [ 2 ]
   // READ CART POSITION and ANGLE from Encoder SPI
-  if (state != 0) {
     uint8_t attempts = 0;
     uint16_t encoderPosition = getPositionSPI(ENC, RES12);  // encoderPosition è definito da 0 a 4096 come da 0° a 360°
 
@@ -245,29 +246,11 @@ void loop() {
       v = 0;
 
       // -- angle --
-      e_a[0] = 0.0;
-      e_a[1] = 0.0;
-      e_a[2] = 0.0;
-      e_a[3] = 0.0;
-      e_a[4] = 0.0;
-
-      u_a[0] = 0.0;
-      u_a[1] = 0.0;
-      u_a[2] = 0.0;
-      u_a[3] = 0.0;
-      u_a[4] = 0.0;
+      e_a[] = {0, 0, 0, 0, 0};
+      u_a[] = {0, 0, 0, 0, 0};
       // -- position --
-      e_p[0] = 0.0;
-      e_p[1] = 0.0;
-      e_p[2] = 0.0;
-      e_p[3] = 0.0;
-      e_p[4] = 0.0;
-
-      u_p[0] = 0.0;
-      u_p[1] = 0.0;
-      u_p[2] = 0.0;
-      u_p[3] = 0.0;
-      u_p[4] = 0.0;
+      e_p[] = {0, 0, 0, 0, 0};
+      u_p[] = {0, 0, 0, 0, 0};
 
       if (abs(angle_error) < MIN_ANGLE_ERROR) {
         state = CTRL;
@@ -291,28 +274,19 @@ void loop() {
       // -- position --
       e_p[2] = e_p[1];
       e_p[1] = e_p[0];
-      e_p[0] = - position_error;
+      e_p[0] = - position_error
 
       u_p[2] = u_p[1];
       u_p[1] = u_p[0];
 
       //u_p[0]= 1 * (e_p[0] + e_p[1] + e_p[2] - u_p[0]D - u_p[1]D - u_p[2]D);
-      u_p[0] = (0 * e_p[0]) + (- 0.0006768664772887434 * e_p[1]) + (0.0006763522535967913 * e_p[2]) - (0 * u_p[0]) + (1 * u_p[0] ) + (1.990028938436608 * u_p[1]) + (-0.990049833749168 * u_p[2]);
+      u_p[0] = (0 * e_p[0]) + (0.0006768664772887434 * e_p[1]) - (-0.0006763522535967913 * e_p[2]) - (0 * u_p[0]) - (-1.990028938436608 * u_p[1]) - (0.990049833749168 * u_p[2]);
 
       e_a[0] = u_p[0] - angle_rad_1;
 
       //u_a[0]= 1 * (e_a[0]N + e_a[1]N + e_a[2]N - u_a[0]D - u_a[1]D - u_a[2]D);
-      u_a[0] = (267 * e_a[0]) + (- 529.0366795060363 * e_a[1]) + (262.0577703362463 * e_a[2]) + (-1 * u_a[0]) + (1.876340995079374 * u_a[1]) + (- 0.876340995079373 * u_a[1]);
+      u_a[0] = (-357 * e_a[0]) + (707.3636501260482 * e_a[1]) + (-350.3918502248686 * e_a[2]) - (-1.876340995079374 * u_a[1]) + (-0.876340995079373 * u_a[1]);
 
-
-
-
-      // if (u_a[0]>20.0){
-      //   u_a[0]=20.0;
-      // }
-      // if (u_a[0]<-20.0){
-      //   u_a[0]=-20.0;
-      // }
 
       /***********************************/
       // Speed setting

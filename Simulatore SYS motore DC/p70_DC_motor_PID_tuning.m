@@ -203,6 +203,8 @@ K_p     = 0.6*k_star;
 T_i     = 0.5*T_star;
 T_d     = 0.12*T_star;
 
+
+
 tau_p   = T_d/10;  %fisica realizzabilirà più veloce
 PID     = K_p*(1 + 1/T_i/s + T_d*s)/(1 + tau_p*s); %Equazione PID
 % Passo allo spazio degli stati

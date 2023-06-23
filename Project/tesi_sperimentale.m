@@ -146,9 +146,9 @@ f_G_position_Zeros = zero(f_G_position);
 % plot_f_Request = ["Request", "rlocus", " [f_G_angle] Luogo diretto"];
 % plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
 % displayPlot(plot_f_Request, f_G_angle, plot_f_Options)
-% plot_f_Request = ["Request", "rlocus", " [f_G_angle] Luogo inverso"];
-% plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
-% displayPlot(plot_f_Request, -f_G_angle, plot_f_Options)
+plot_f_Request = ["Request", "rlocus", " [f_G_angle] Luogo inverso"];
+plot_f_Options = ["Grid_on", "Box_on", "edit_xlabel", "edit_ylabel", "edit_legend"];
+displayPlot(plot_f_Request, -f_G_angle, plot_f_Options)
 
 % % f_G_position 
 % plot_f_Request = ["Request", "impulse", " [f_G_position] Risposta impulso"];
