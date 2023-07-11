@@ -44,7 +44,7 @@ p_Ja = (1/12)*p_ma*p_l^2;% Inertia p_ma
 p_Jb = 0;            % Inertia p_mb
 % Initial Parameters
 init_v0 = 0;              % to SLX
-init_x0 = -3;             % to SLX
+init_x0 = 0.20;             % to SLX
 init_omega0 = 0;          % to SLX
 init_theta0 = pi/12;      % to SLX
 init_thetaRef = 0;        % to SLX
@@ -209,8 +209,9 @@ f_G_position_Zeros = zero(f_G_position);
 % f_K_angle_Gain = 1000;
 % f_R_angle = -(s+1)*(s+3.8)/(s*(s+100));
 
-% f_K_angle_Gain = 96; %To enter 5%
-f_K_angle_Gain = 267;
+%f_K_angle_Gain = 96; %To enter 5%
+%f_K_angle_Gain = 267; %Good
+f_K_angle_Gain = 358;
 f_R_angle = -(s+3.1)*(s+6.8)/(s*(s+66));
 
 
@@ -222,7 +223,7 @@ f_KR_angle = f_K_angle_Gain * f_R_angle;
 % Analisi del sistema di controllo progettato 
 
 % Funzione d'Anello
-f_L_angle = minreal(f_KR_angle * f_G_angle)
+f_L_angle = minreal(f_KR_angle * f_G_angle);
 
 % Funzione di Sensitività [f_Sensitivity_S_angle]
 f_Sensitivity_S_angle = minreal(1/(1+f_L_angle));
@@ -320,7 +321,7 @@ B_alpha_2_angle = alpha_angle * Ts * (I_angle - alpha_angle * A_CTRL_angle * Ts)
 
 % Z TO ARDUINO TBD
 % Continuos to Discrete
-arduino_R1 = c2d(f_KR_angle, Ts);  %this is a short display, go to var panel and extract more decimals
+arduino_R1 = c2d(f_KR_angle, Ts, 'tustin');  %this is a short display, go to var panel and extract more decimals
 
 
 % Automated function to arduino
@@ -336,16 +337,20 @@ returnArduinoCode(arduino_R1.Numerator, arduino_R1.Denominator, "_a" ,1)
 
 %% Controllo della posizione  (1) 
 
-cascade_f_G_XTheta = minreal((f_G_position)/(f_G_angle));
+cascade_f_G_XTheta = minreal((f_G_position)/(f_G_angle))
 
 % plot_f_Request = ["Request", "rlocus", " [cascade_f_G_XTheta] rlocus"];
 % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 % displayPlot(plot_f_Request, cascade_f_G_XTheta, plot_f_Options)
+% plot_f_Request = ["Request", "rlocus", " [-cascade_f_G_XTheta] rlocus"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, -cascade_f_G_XTheta, plot_f_Options)
 
-plot_f_Request = ["Request", "rlocus", " [-cascade_f_G_XTheta] rlocus"];
+cascade_f_G_E_XTheta = cascade_f_G_XTheta * (1/s)
+
+plot_f_Request = ["Request", "margin", " [cascade_f_G_E_XTheta] margin"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
-displayPlot(plot_f_Request, -cascade_f_G_XTheta, plot_f_Options)
-
+displayPlot(plot_f_Request, cascade_f_G_E_XTheta, plot_f_Options)
 % plot_f_Request = ["Request", "bode", " [cascade_f_G_XTheta] rlocus"];
 % plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 % displayPlot(plot_f_Request, cascade_f_G_XTheta, plot_f_Options)
@@ -360,25 +365,56 @@ displayPlot(plot_f_Request, -cascade_f_G_XTheta, plot_f_Options)
 % %[3] Lead controller to boost pahse Pm
 
 
+% Caso 1
+% cascade_f_K_position_Gain = 0.34;
+% cascade_f_R_position = (s+0.38)/((s + 1.5) * (s + 3.5));
+
+% Caso 2
+% cascade_f_K_position_Gain = 0.319;
+% cascade_f_R_position = (s+0.2)/((s + 1.5) * (s + 4));
+
+% Caso 3
+cascade_f_K_position_Gain = 0.417;
+%cascade_f_R_position = (s+0.3)/((s + 2) * (s + 3));
+cascade_f_R_position = (s+0.5)/((s + 2) * (s + 3));
 
 
-cascade_f_K_position_Gain = 0.34;
-cascade_f_R_position = (s+0.38)/((s + 1.5) * (s + 3.5));
-
-% cascade_f_K_position_Gain = 0.4;
-% cascade_f_R_position = (s+0.3)/((s + 2) * (s + 3));
-
+% Caso 4
+% cascade_f_K_position_Gain = 0.319;
+% cascade_f_R_position = (s+ .3)/((s + 1) * (s + 4));
 cascade_f_KR_position = cascade_f_K_position_Gain * cascade_f_R_position;
+
+% CASO PID
+% tempo di assestamento minore, 
+% a fase non minima, metto 
+% polo nell'origine
+% due zeri per aumentare il margine di fase 
+% eun polo
+% 
+% pid_mu = 12;
+% pid_T_z1 = 2;
+% pid_T_z2 = 4;
+% pid_T_p = 0.2;
+% % Create PID controller
+% cascade_f_KR_position =  pid_mu * (1 + pid_T_z1 * s) * (1 + pid_T_z2 * s) / (s * (1 + pid_T_p * s));
+% zpk(cascade_f_KR_position)
 
 % Analisi del sistema di controllo progettato 
 
 % Funzione d'Anello
 cascade_f_L_position = minreal(cascade_f_KR_position * cascade_f_G_XTheta);
+% 
+% plot_f_Request = ["Request", "rlocus", " [cascade_f_L_position] rlocus"];
+% plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+% displayPlot(plot_f_Request, cascade_f_L_position, plot_f_Options)
 
-plot_f_Request = ["Request", "rlocus", " [cascade_f_L_position] rlocus"];
+plot_f_Request = ["Request", "rlocus", " [-cascade_f_L_position] rlocus"];
 plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
 displayPlot(plot_f_Request, cascade_f_L_position, plot_f_Options)
 
+plot_f_Request = ["Request", "margin", " [cascade_f_L_position] margin"];
+plot_f_Options = ["Grid_on", "Box_off", "edit_xlabel", "edit_ylabel", "edit_legend"];
+displayPlot(plot_f_Request, cascade_f_L_position, plot_f_Options)
 
 % Funzione di Sensitività [f_Sensitivity_S_position]
 cascade_f_Sensitivity_S_position = minreal(1/(1 + cascade_f_L_position));
@@ -416,14 +452,12 @@ cascade_B_alpha_2_position = cascade_alpha_position * Ts * (cascade_I_position -
 
 % Z TO ARDUINO TBD
 % Continuos to Discrete
-arduino_R2 = c2d(cascade_f_KR_position, Ts);  %this is a short display, go to var panel and extract more decimals
+arduino_R2 = c2d(cascade_f_KR_position, Ts, 'tustin');  %this is a short display, go to var panel and extract more decimals
 
 
 % Automated function to arduino
 % set 1 to display output and copy, 0 to block
 returnArduinoCode(arduino_R2.Numerator, arduino_R2.Denominator, "_p" ,1)
-
-%% Anti Windup
 
 
 %% END Segment

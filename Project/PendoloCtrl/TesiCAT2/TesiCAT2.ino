@@ -144,9 +144,9 @@ void loop() {
     }
 
     prev_angle = ang_3;
-    cart_position = (intAngle + ang_3) * CONST;  //Trasformo gradi in  cm
+    cart_position = (intAngle + ang_3) * CONST;  //Trasformo gradi in metri
   }
-  position_error = REF_CART_POSITION - cart_position;
+  position_error = 75 - cart_position;
   /****************************************************/
 
 
@@ -179,7 +179,6 @@ void loop() {
     ang_1 = (encAngle_1 / 4096.0) * 360.0;      // valore angolo in gradi
   }
   angle_error = 180 - ang_1;
-  angle_error_rad = angle_error * 3.14 / 180;
   /***************************************************/
 
 
@@ -244,33 +243,35 @@ void loop() {
       ctrlSpeed = 0;
       v = 0;
 
-      // -- angle --
-      e_a[0] = 0.0;
-      e_a[1] = 0.0;
-      e_a[2] = 0.0;
-      e_a[3] = 0.0;
-      e_a[4] = 0.0;
-
-      u_a[0] = 0.0;
-      u_a[1] = 0.0;
-      u_a[2] = 0.0;
-      u_a[3] = 0.0;
-      u_a[4] = 0.0;
-      // -- position --
-      e_p[0] = 0.0;
-      e_p[1] = 0.0;
-      e_p[2] = 0.0;
-      e_p[3] = 0.0;
-      e_p[4] = 0.0;
-
-      u_p[0] = 0.0;
-      u_p[1] = 0.0;
-      u_p[2] = 0.0;
-      u_p[3] = 0.0;
-      u_p[4] = 0.0;
-
       if (abs(angle_error) < MIN_ANGLE_ERROR) {
         state = CTRL;
+
+        // -- angle --
+        e_a[0] = 0.0;
+        e_a[1] = 0.0;
+        e_a[2] = 0.0;
+        e_a[3] = 0.0;
+        e_a[4] = 0.0;
+
+        u_a[0] = 0.0;
+        u_a[1] = 0.0;
+        u_a[2] = 0.0;
+        u_a[3] = 0.0;
+        u_a[4] = 0.0;
+        // -- position --
+        e_p[0] = 0.0;
+        e_p[1] = 0.0;
+        e_p[2] = 0.0;
+        e_p[3] = 0.0;
+        e_p[4] = 0.0;
+
+        u_p[0] = 0.0;
+        u_p[1] = 0.0;
+        u_p[2] = 0.0;
+        u_p[3] = 0.0;
+        u_p[4] = 0.0;
+
+
         Serial.println("WAIT | to CTRL, init states");        
       }
       break;
@@ -279,9 +280,10 @@ void loop() {
     case CTRL:{  // Regulator Control state
       Serial.println("CTRL | Executing control algos");
       //angle_rad_1 = angle_error * 3.14 / 180; // converto l'angolo da gradi a radianti
-
-    
-    
+      angle_error = 180 - ang_1;
+      angle_error_rad = angle_error * 3.14 / 180;
+      position_error = (75 - cart_position) / 100;
+ 
 
       // -- position --
       e_p[2] = e_p[1];
@@ -290,7 +292,9 @@ void loop() {
       u_p[2] = u_p[1];
       u_p[1] = u_p[0];
       //u_p[0]= 1 * (e_p[0] + e_p[1] + e_p[2] - u_p[0]D - u_p[1]D - u_p[2]D);
-      u_p[0] =  ( 0.0006768664772887434 * e_p[1]) + (-0.0006763522535967913 * e_p[2]) - (0 * u_p[0]) - (-1.990028938436608 * u_p[1]) - (0.990049833749168 * u_p[2]);
+      //u_p[0] = ( 0.0006768664772887434 * e_p[0]) + (-0.0006763522535967913 * e_p[1]) - (-1.990028938436608 * u_p[1]) - (0.990049833749168 * u_p[2]);
+      u_p[0] = ( 0.0003384352469800531 * e_p[0]) + (0.0000002571130847326428 * e_p[1]) + (-0.0003381781338953205 * e_p[2]) - (-1.990028907809188 * u_p[1]) - (0.990049803222421 * u_p[2]);
+
 
 
       // -- angle --
@@ -302,9 +306,9 @@ void loop() {
       //e_a[0] = u_p[0] - angle_error;
       e_a[0] = -angle_error_rad + u_p[0];
       //u_a[0]= 1 * (e_a[0]N + e_a[1]N + e_a[2]N - u_a[0]D - u_a[1]D - u_a[2]D);
-      u_a[0] = (-267 * e_a[0]) + ( 529.0366795060363 * e_a[1]) + (-262.0577703362463 * e_a[2])  - (-1.876340995079374 * u_a[1]) - ( 0.876340995079373 * u_a[2]);
-
-
+      //u_a[0] = (-267 * e_a[0]) + ( 529.0366795060363 * e_a[1]) + (-262.0577703362463 * e_a[2])  - (-1.876340995079374 * u_a[1]) - ( 0.876340995079373 * u_a[2]);
+      // u_a[0] = (-252.953966566604 * e_a[0]) + ( 500.9275265290808 * e_a[1]) + (-247.994679512195 * e_a[2]) - (-1.876172607879925 * u_a[1]) - ( 0.876172607879925 * u_a[2]);
+      u_a[0]=-467.6023148148148*e_a[0]+925.9064814814815*e_a[1]-458.3430555555556*e_a[2]+1.851851851851852*u_a[1]-0.851851851851852*u_a[2];
 
 
       // if (u_a[0]>20.0){
@@ -331,7 +335,8 @@ void loop() {
       /***********************************/
 
 
-      Serial.println(String(angle_error) + "," + String(angle_error_rad));
+      //Serial.println(String(angle_error) + "," + String(angle_error_rad));
+      Serial.println( String(cart_position)  + "," + String(position_error) + "," + String(u_p[0]) );
 
       if (abs(angle_error) > MAX_ANGLE_ERROR || sw_b_on || sw_w_on) {
         //Serial.println("Sono qui");
